@@ -54,8 +54,6 @@ public:
 protected:
 	std::list<SubTrajectory> trajectories_;
 	SubTrajectory& addTrajectory(const robot_trajectory::RobotTrajectoryPtr &, double cost);
-	bool sendForward(SubTrajectory& traj, const planning_scene::PlanningSceneConstPtr& ps);
-	bool sendBackward(SubTrajectory& traj, const planning_scene::PlanningSceneConstPtr& ps);
 
 private:
 	// !! items accessed only by ContainerBasePrivate to maintain hierarchy !!
@@ -80,14 +78,14 @@ public:
 
 	bool hasStartState() const;
 	const InterfaceState &fetchStartState();
-	bool sendForward(const robot_trajectory::RobotTrajectoryPtr& trajectory,
+	void sendForward(const robot_trajectory::RobotTrajectoryPtr& trajectory,
 	                 const InterfaceState& from,
 	                 const planning_scene::PlanningSceneConstPtr& to,
 	                 double cost = 0);
 
 	bool hasEndState() const;
 	const InterfaceState &fetchEndState();
-	bool sendBackward(const robot_trajectory::RobotTrajectoryPtr& trajectory,
+	void sendBackward(const robot_trajectory::RobotTrajectoryPtr& trajectory,
 	                  const planning_scene::PlanningSceneConstPtr& from,
 	                  const InterfaceState& to,
 	                  double cost = 0);

@@ -84,7 +84,9 @@ SubTaskPrivate::SubTaskPrivate(SubTask *me, const std::__cxx11::string &name)
 
 SubTrajectory& SubTaskPrivate::addTrajectory(const robot_trajectory::RobotTrajectoryPtr& trajectory, double cost){
 	trajectories_.emplace_back(trajectory);
-	return trajectories_.back();
+	SubTrajectory& back = trajectories_.back();
+	back.creator = this;
+	return back;
 }
 
 SubTaskPrivate::InterfaceFlags SubTaskPrivate::interfaceFlags() const
@@ -104,24 +106,6 @@ inline SubTaskPrivate::InterfaceFlags SubTaskPrivate::deducedFlags() const
 	if (prevOutput()) f |= WRITES_PREV_OUTPUT;
 	if (nextInput())  f |= WRITES_NEXT_INPUT;
 	return f;
-}
-
-inline bool SubTaskPrivate::sendForward(SubTrajectory &trajectory, const planning_scene::PlanningSceneConstPtr &ps){
-	std::cout << "sending state to start" << std::endl;
-	if (next_input_) {
-		next_input_->add(ps, &trajectory, NULL);
-		return true;
-	}
-	return false;
-}
-
-inline bool SubTaskPrivate::sendBackward(SubTrajectory &trajectory, const planning_scene::PlanningSceneConstPtr &ps){
-	std::cout << "sending state to end" << std::endl;
-	if (prev_output_) {
-		prev_output_->add(ps, NULL, &trajectory);
-		return true;
-	}
-	return false;
 }
 
 
@@ -153,13 +137,15 @@ const InterfaceState& PropagatingAnyWayPrivate::fetchStartState(){
 	return state;
 }
 
-bool PropagatingAnyWayPrivate::sendForward(const robot_trajectory::RobotTrajectoryPtr& t,
+void PropagatingAnyWayPrivate::sendForward(const robot_trajectory::RobotTrajectoryPtr& t,
                                            const InterfaceState& from,
                                            const planning_scene::PlanningSceneConstPtr& to,
                                            double cost){
+	std::cout << "sending state forward" << std::endl;
 	SubTrajectory &trajectory = addTrajectory(t, cost);
 	trajectory.setStartState(from);
-	return SubTaskPrivate::sendForward(trajectory, to);
+	next_input_->add(ps, &trajectory, NULL);
+	parent_->onNewSolution();
 }
 
 
@@ -177,13 +163,15 @@ const InterfaceState& PropagatingAnyWayPrivate::fetchEndState(){
 	return state;
 }
 
-bool PropagatingAnyWayPrivate::sendBackward(const robot_trajectory::RobotTrajectoryPtr& t,
+void PropagatingAnyWayPrivate::sendBackward(const robot_trajectory::RobotTrajectoryPtr& t,
                                             const planning_scene::PlanningSceneConstPtr& from,
                                             const InterfaceState& to,
                                             double cost){
+	std::cout << "sending state backward" << std::endl;
 	SubTrajectory& trajectory = addTrajectory(t, cost);
 	trajectory.setEndState(to);
-	return SubTaskPrivate::sendBackward(trajectory, from);
+	prev_output_->add(from, NULL, &trajectory);
+	parent_->onNewSolution();
 }
 
 
@@ -331,16 +319,15 @@ SubTaskPrivate::InterfaceFlags GeneratorPrivate::announcedFlags() const {
 	return InterfaceFlags({WRITES_NEXT_INPUT,WRITES_PREV_OUTPUT});
 }
 
-inline bool GeneratorPrivate::spawn(const planning_scene::PlanningSceneConstPtr &ps, double cost)
+inline void GeneratorPrivate::spawn(const planning_scene::PlanningSceneConstPtr &ps, double cost)
 {
 	// empty trajectory ref -> this node only produces states
 	robot_trajectory::RobotTrajectoryPtr dummy;
 	SubTrajectory& trajectory = addTrajectory(dummy, cost);
-
-	std::cout << "spawning state" << std::endl;
-	bool result = sendBackward(trajectory, ps);
-	result |= sendForward(trajectory, ps);
-	return result;
+	std::cout << "spawning state forwards and backwards" << std::endl;
+	prev_output_->add(ps, NULL, &trajectory);
+	next_input_->add(ps, &trajectory, NULL);
+	parent_->onNewColution();
 }
 
 
