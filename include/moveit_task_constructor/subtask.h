@@ -44,19 +44,13 @@ public:
 	typedef std::unique_ptr<SubTask> pointer;
 
 	~SubTask();
+
+	/// initialize stage once before planning
+	virtual bool init(const planning_scene::PlanningSceneConstPtr& scene);
 	const std::string& getName() const;
 
-	// TODO: results from { TIMEOUT, EXHAUSTED, FINISHED, WAITING }
-	virtual bool canCompute() const = 0;
-	virtual bool compute() = 0;
-
-	planning_scene::PlanningSceneConstPtr scene() const;
-	planning_pipeline::PlanningPipelinePtr planner() const;
-	void setPlanningScene(const planning_scene::PlanningSceneConstPtr&);
-	void setPlanningPipeline(const planning_pipeline::PlanningPipelinePtr&);
-
 protected:
-	/// can only instantiated by derived classes
+	/// SubTask can only be instantiated through derived classes
 	SubTask(SubTaskPrivate *impl);
 
 protected:
@@ -75,13 +69,17 @@ public:
 	enum Direction { FORWARD = 0x01, BACKWARD = 0x02, ANYWAY = FORWARD | BACKWARD};
 	void restrictDirection(Direction dir);
 
-	virtual bool computeForward(const InterfaceState& from, planning_scene::PlanningScenePtr& to,
-	                            robot_trajectory::RobotTrajectoryPtr& trajectory, double& cost);
-	virtual bool computeBackward(planning_scene::PlanningScenePtr& from, const InterfaceState& to,
-	                             robot_trajectory::RobotTrajectoryPtr& trajectory, double& cost);
+	virtual bool computeForward(const InterfaceState& from) = 0;
+	virtual bool computeBackward(const InterfaceState& to) = 0;
 
-	bool canCompute() const override;
-	bool compute() override;
+	void sendForward(const InterfaceState& from,
+	                 const planning_scene::PlanningSceneConstPtr& to,
+	                 const robot_trajectory::RobotTrajectoryPtr& trajectory,
+	                 double cost = 0);
+	void sendBackward(const planning_scene::PlanningSceneConstPtr& from,
+	                  const InterfaceState& to,
+	                  const robot_trajectory::RobotTrajectoryPtr& trajectory,
+	                  double cost = 0);
 
 protected:
 	// constructor for use in derived classes
@@ -99,6 +97,7 @@ public:
 private:
 	// restrict access to backward method to provide compile-time check
 	using PropagatingAnyWay::computeBackward;
+	using PropagatingAnyWay::sendBackward;
 };
 
 
@@ -120,7 +119,9 @@ public:
 	PRIVATE_CLASS(Generator)
 	Generator(const std::string& name);
 
-	bool spawn(const planning_scene::PlanningSceneConstPtr &ps, double cost = 0);
+	virtual bool canCompute() const = 0;
+	virtual bool compute() = 0;
+	void spawn(const planning_scene::PlanningSceneConstPtr &ps, double cost = 0);
 };
 
 
@@ -130,11 +131,9 @@ public:
 	PRIVATE_CLASS(Connecting)
 	Connecting(const std::string& name);
 
-	// methods for manual use
-	bool hasStatePair() const;
-	InterfaceStatePair fetchStatePair();
-	void connect(const robot_trajectory::RobotTrajectoryPtr&,
-	             const InterfaceStatePair&, double cost = 0);
+	virtual bool compute(const InterfaceState& from, const InterfaceState& to) = 0;
+	void connect(const InterfaceState& from, const InterfaceState& to,
+	             const robot_trajectory::RobotTrajectoryPtr& trajectory, double cost = 0);
 };
 
 

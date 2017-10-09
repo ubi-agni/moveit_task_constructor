@@ -29,9 +29,9 @@ bool ContainerBasePrivate::traverseStages(const ContainerBase::StageCallback &pr
 	for (auto &stage : children_) {
 		if (!processor(*stage, depth))
 			continue;
-		ContainerBase *container = dynamic_cast<ContainerBase*>(stage.get());
+		ContainerBasePrivate *container = dynamic_cast<ContainerBasePrivate*>(stage->pimpl_func());
 		if (container)
-			static_cast<ContainerBasePrivate*>(container->pimpl_func())->traverseStages(processor, depth+1);
+			container->traverseStages(processor, depth+1);
 	}
 	return true;
 }
@@ -40,8 +40,6 @@ ContainerBasePrivate::iterator ContainerBasePrivate::insert(ContainerBasePrivate
                                                             ContainerBasePrivate::const_iterator pos) {
 	SubTaskPrivate *impl = subtask->pimpl_func();
 	impl->parent_ = this;
-	subtask->setPlanningScene(scene_);
-	subtask->setPlanningPipeline(planner_);
 	impl->it_ = children_.insert(pos, std::move(subtask));
 	return impl->it_;
 }
@@ -62,6 +60,17 @@ bool ContainerBase::traverseStages(const ContainerBase::StageCallback &processor
 {
 	IMPL(const ContainerBase);
 	return impl->traverseStages(processor, 0);
+}
+
+bool ContainerBase::canCompute() const
+{
+	IMPL(const ContainerBase);
+	return impl->canCompute();
+}
+
+bool ContainerBase::compute() {
+	IMPL(ContainerBase);
+	return impl->compute();
 }
 
 
@@ -159,12 +168,12 @@ inline const SubTaskPrivate* SerialContainerPrivate::next(const_iterator it) con
 	return (*++it)->pimpl_func();
 }
 
-const SubTaskPrivate *SerialContainerPrivate::prev(const SubTaskPrivate *child) const
+inline const SubTaskPrivate *SerialContainerPrivate::prev(const SubTaskPrivate *child) const
 {
 	return prev(it(child));
 }
 
-const SubTaskPrivate *SerialContainerPrivate::next(const SubTaskPrivate *child) const
+inline const SubTaskPrivate *SerialContainerPrivate::next(const SubTaskPrivate *child) const
 {
 	return next(it(child));
 }
@@ -195,21 +204,19 @@ bool SerialContainer::insert(value_type&& subtask, int before)
 	return true;
 }
 
-bool SerialContainer::canCompute() const
+bool SerialContainerPrivate::canCompute() const
 {
-	IMPL(const SerialContainer);
-	return impl->children().size() > 0;
+	return children().size() > 0;
 }
 
-bool SerialContainer::compute()
+bool SerialContainerPrivate::compute()
 {
-	IMPL(SerialContainer);
 	bool computed = false;
-	for(const auto& stage : impl->children()){
-		if(!stage->canCompute())
+	for(const auto& stage : children()) {
+		if(!stage->pimpl_func()->canCompute())
 			continue;
 		std::cout << "Computing subtask '" << stage->getName() << "':" << std::endl;
-		bool success = stage->compute();
+		bool success = stage->pimpl_func()->compute();
 		computed = true;
 		std::cout << (success ? "succeeded" : "failed") << std::endl;
 	}

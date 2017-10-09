@@ -44,14 +44,8 @@ void Move::setTo(std::string named_target){
 }
 */
 
-bool Move::canCompute() const{
-	return hasStatePair();
-}
-
-bool Move::compute(){
-	InterfaceStatePair state_pair= fetchStatePair();
-
-	mgi_->setJointValueTarget(state_pair.second.state->getCurrentState());
+bool Move::compute(const InterfaceState &from, const InterfaceState &to) {
+	mgi_->setJointValueTarget(to.state->getCurrentState());
 	if( !planner_id_.empty() )
 		mgi_->setPlannerId(planner_id_);
 	mgi_->setPlanningTime(timeout_);
@@ -61,11 +55,11 @@ bool Move::compute(){
 
 	ros::Duration(4.0).sleep();
 	::planning_interface::MotionPlanResponse res;
-	if(!planner()->generatePlan(state_pair.first.state, req, res))
+	if(!planner_->generatePlan(from.state, req, res))
 		return false;
 
 	// finish subtask
-	connect(res.trajectory_, state_pair);
+	connect(from, to, res.trajectory_);
 
 	return true;
 }

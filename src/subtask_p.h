@@ -37,6 +37,9 @@ public:
 	virtual InterfaceFlags announcedFlags() const = 0;
 	std::list<SubTrajectory>& trajectories() { return trajectories_; }
 
+	virtual bool canCompute() const = 0;
+	virtual bool compute() = 0;
+
 public:
 	SubTask* const me_; // associated/owning SubTask instance
 	const std::string name_;
@@ -47,13 +50,14 @@ public:
 	InterfacePtr input_;
 	InterfacePtr output_;
 
-	inline const Interface* prevOutput() const { return prev_output_; }
-	inline const Interface* nextInput() const { return next_input_; }
+	inline ContainerBasePrivate* parent() const { return parent_; }
+	inline Interface* prevOutput() const { return prev_output_; }
+	inline Interface* nextInput() const { return next_input_; }
 	inline bool isConnected() const { return prev_output_ || next_input_; }
+	SubTrajectory& addTrajectory(const robot_trajectory::RobotTrajectoryPtr &, double cost);
 
 protected:
 	std::list<SubTrajectory> trajectories_;
-	SubTrajectory& addTrajectory(const robot_trajectory::RobotTrajectoryPtr &, double cost);
 
 private:
 	// !! items accessed only by ContainerBasePrivate to maintain hierarchy !!
@@ -76,19 +80,14 @@ public:
 	                                const std::string &name);
 	InterfaceFlags announcedFlags() const override;
 
+	bool canCompute() const override;
+	bool compute() override;
+
 	bool hasStartState() const;
 	const InterfaceState &fetchStartState();
-	void sendForward(const robot_trajectory::RobotTrajectoryPtr& trajectory,
-	                 const InterfaceState& from,
-	                 const planning_scene::PlanningSceneConstPtr& to,
-	                 double cost = 0);
 
 	bool hasEndState() const;
 	const InterfaceState &fetchEndState();
-	void sendBackward(const robot_trajectory::RobotTrajectoryPtr& trajectory,
-	                  const planning_scene::PlanningSceneConstPtr& from,
-	                  const InterfaceState& to,
-	                  double cost = 0);
 
 protected:
 	// get informed when new input or output state becomes available
@@ -103,24 +102,12 @@ protected:
 class PropagatingForwardPrivate : public PropagatingAnyWayPrivate {
 public:
 	inline PropagatingForwardPrivate(PropagatingForward *me, const std::string &name);
-
-private:
-	// restrict access to backward methods to provide compile-time check
-	using PropagatingAnyWayPrivate::hasEndState;
-	using PropagatingAnyWayPrivate::fetchEndState;
-	using PropagatingAnyWayPrivate::sendBackward;
 };
 
 
 class PropagatingBackwardPrivate : public PropagatingAnyWayPrivate {
 public:
 	inline PropagatingBackwardPrivate(PropagatingBackward *me, const std::string &name);
-
-private:
-	// restrict access to forward method to provide compile-time check
-	using PropagatingAnyWayPrivate::hasStartState;
-	using PropagatingAnyWayPrivate::fetchStartState;
-	using PropagatingAnyWayPrivate::sendForward;
 };
 
 
@@ -128,7 +115,9 @@ class GeneratorPrivate : public SubTaskPrivate {
 public:
 	inline GeneratorPrivate(Generator *me, const std::string &name);
 	InterfaceFlags announcedFlags() const override;
-	bool spawn(const planning_scene::PlanningSceneConstPtr& ps, double cost);
+
+	bool canCompute() const override;
+	bool compute() override;
 };
 
 
@@ -138,6 +127,10 @@ class ConnectingPrivate : public SubTaskPrivate {
 public:
 	inline ConnectingPrivate(Connecting *me, const std::string &name);
 	InterfaceFlags announcedFlags() const override;
+
+	bool canCompute() const override;
+	bool compute() override;
+
 	void connect(const robot_trajectory::RobotTrajectoryPtr& t,
 	             const InterfaceStatePair& state_pair, double cost);
 

@@ -55,11 +55,14 @@ public:
 	bool canInsert(const SubTask& stage, const_iterator before) const;
 	virtual iterator insert(value_type &&stage, const_iterator before) override;
 
+	bool canCompute() const override;
+	bool compute() override;
+
 	inline const SubTaskPrivate *prev(const_iterator it) const;
 	inline const SubTaskPrivate *next(const_iterator it) const;
 
-	const SubTaskPrivate *prev(const SubTaskPrivate *child) const;
-	const SubTaskPrivate *next(const SubTaskPrivate *child) const;
+	inline const SubTaskPrivate *prev(const SubTaskPrivate *child) const;
+	inline const SubTaskPrivate *next(const SubTaskPrivate *child) const;
 };
 
 

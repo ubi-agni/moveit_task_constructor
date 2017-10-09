@@ -14,8 +14,7 @@ class Move : public Connecting {
 public:
 	Move(std::string name);
 
-	virtual bool canCompute() const override;
-	virtual bool compute() override;
+	bool compute(const InterfaceState &from, const InterfaceState &to);
 
 	void setGroup(std::string group);
 	void setLink(std::string link);
@@ -37,6 +36,7 @@ protected:
 	std::string from_named_target_;
 	std::string to_named_target_;
 
+	planning_pipeline::PlanningPipelinePtr planner_;
 	moveit::planning_interface::MoveGroupInterfacePtr mgi_;
 };
 

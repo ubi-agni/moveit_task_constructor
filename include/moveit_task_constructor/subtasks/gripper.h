@@ -16,10 +16,8 @@ public:
 
 	bool compute(const InterfaceState &state, planning_scene::PlanningScenePtr &scene,
 	             robot_trajectory::RobotTrajectoryPtr &trajectory, double &cost);
-	bool computeForward(const InterfaceState& from, planning_scene::PlanningScenePtr &to,
-	                    robot_trajectory::RobotTrajectoryPtr& trajectory, double& cost) override;
-	bool computeBackward(planning_scene::PlanningScenePtr& from, const InterfaceState& to,
-	                     robot_trajectory::RobotTrajectoryPtr& trajectory, double& cost) override;
+	bool computeForward(const InterfaceState& from) override;
+	bool computeBackward(const InterfaceState& to) override;
 
 	void setEndEffector(std::string eef);
 	void setAttachLink(std::string link);
@@ -35,6 +33,7 @@ protected:
 	std::string grasp_object_;
 	std::string attach_link_;
 
+	planning_pipeline::PlanningPipelinePtr planner_;
 	moveit::planning_interface::MoveGroupInterfacePtr mgi_;
 };
 

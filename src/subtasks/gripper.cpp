@@ -64,7 +64,7 @@ bool Gripper::compute(const InterfaceState &state, planning_scene::PlanningScene
 	}
 
 	::planning_interface::MotionPlanResponse res;
-	if(!planner()->generatePlan(scene, req, res))
+	if(!planner_->generatePlan(scene, req, res))
 		return false;
 
 	// set end state
@@ -82,14 +82,26 @@ bool Gripper::compute(const InterfaceState &state, planning_scene::PlanningScene
 	return true;
 }
 
-bool Gripper::computeForward(const InterfaceState &from, planning_scene::PlanningScenePtr &to,
-                             robot_trajectory::RobotTrajectoryPtr &trajectory, double &cost){
-	return compute(from, to, trajectory, cost);
+bool Gripper::computeForward(const InterfaceState &from){
+	planning_scene::PlanningScenePtr to;
+	robot_trajectory::RobotTrajectoryPtr trajectory;
+	double cost = 0;
+
+	if (!compute(from, to, trajectory, cost))
+		return false;
+	sendForward(from, to, trajectory, cost);
+	return true;
 }
-bool Gripper::computeBackward(planning_scene::PlanningScenePtr &from, const InterfaceState &to,
-                              robot_trajectory::RobotTrajectoryPtr &trajectory, double &cost)
+bool Gripper::computeBackward(const InterfaceState &to)
 {
-	return compute(to, from, trajectory, cost);
+	planning_scene::PlanningScenePtr from;
+	robot_trajectory::RobotTrajectoryPtr trajectory;
+	double cost = 0;
+
+	if (!compute(to, from, trajectory, cost))
+		return false;
+	sendBackward(from, to, trajectory, cost);
+	return true;
 }
 
 } } }

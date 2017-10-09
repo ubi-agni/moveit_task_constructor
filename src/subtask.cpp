@@ -59,24 +59,6 @@ std::ostream& operator<<(std::ostream &os, const SubTaskPrivate& stage) {
 	return os;
 }
 
-planning_scene::PlanningSceneConstPtr SubTask::scene() const
-{
-	return pimpl_->scene_;
-}
-
-planning_pipeline::PlanningPipelinePtr SubTask::planner() const
-{
-	return pimpl_->planner_;
-}
-
-void SubTask::setPlanningScene(const planning_scene::PlanningSceneConstPtr &scene){
-	pimpl_->scene_= scene;
-}
-
-void SubTask::setPlanningPipeline(const planning_pipeline::PlanningPipelinePtr &planner){
-	pimpl_->planner_= planner;
-}
-
 
 SubTaskPrivate::SubTaskPrivate(SubTask *me, const std::__cxx11::string &name)
    : me_(me), name_(name), parent_(nullptr), prev_output_(nullptr), next_input_(nullptr)
@@ -85,7 +67,6 @@ SubTaskPrivate::SubTaskPrivate(SubTask *me, const std::__cxx11::string &name)
 SubTrajectory& SubTaskPrivate::addTrajectory(const robot_trajectory::RobotTrajectoryPtr& trajectory, double cost){
 	trajectories_.emplace_back(trajectory);
 	SubTrajectory& back = trajectories_.back();
-	back.creator = this;
 	return back;
 }
 
@@ -137,18 +118,6 @@ const InterfaceState& PropagatingAnyWayPrivate::fetchStartState(){
 	return state;
 }
 
-void PropagatingAnyWayPrivate::sendForward(const robot_trajectory::RobotTrajectoryPtr& t,
-                                           const InterfaceState& from,
-                                           const planning_scene::PlanningSceneConstPtr& to,
-                                           double cost){
-	std::cout << "sending state forward" << std::endl;
-	SubTrajectory &trajectory = addTrajectory(t, cost);
-	trajectory.setStartState(from);
-	next_input_->add(ps, &trajectory, NULL);
-	parent_->onNewSolution();
-}
-
-
 inline bool PropagatingAnyWayPrivate::hasEndState() const{
 	return next_output_state_ != output_->end();
 }
@@ -163,15 +132,48 @@ const InterfaceState& PropagatingAnyWayPrivate::fetchEndState(){
 	return state;
 }
 
-void PropagatingAnyWayPrivate::sendBackward(const robot_trajectory::RobotTrajectoryPtr& t,
-                                            const planning_scene::PlanningSceneConstPtr& from,
-                                            const InterfaceState& to,
-                                            double cost){
-	std::cout << "sending state backward" << std::endl;
-	SubTrajectory& trajectory = addTrajectory(t, cost);
-	trajectory.setEndState(to);
-	prev_output_->add(from, NULL, &trajectory);
-	parent_->onNewSolution();
+bool PropagatingAnyWayPrivate::canCompute() const
+{
+	if ((dir & PropagatingAnyWay::FORWARD) && hasStartState())
+		return true;
+	if ((dir & PropagatingAnyWay::BACKWARD) && hasEndState())
+		return true;
+	return false;
+}
+
+bool PropagatingAnyWayPrivate::compute()
+{
+	PropagatingAnyWay* me = static_cast<PropagatingAnyWay*>(me_);
+
+	bool result = false;
+	planning_scene::PlanningScenePtr ps;
+	robot_trajectory::RobotTrajectoryPtr trajectory;
+	double cost;
+	if ((dir & PropagatingAnyWay::FORWARD) && hasStartState()) {
+		if (me->computeForward(fetchStartState()))
+			result |= true;
+	}
+	if ((dir & PropagatingAnyWay::BACKWARD) && hasEndState()) {
+		if (me->computeBackward(fetchEndState()))
+			result |= true;
+	}
+	return result;
+}
+
+void PropagatingAnyWayPrivate::newInputState(const Interface::iterator &it)
+{
+	// we just appended a state to the list, but the iterator doesn't see it anymore
+	// so let's point it at the new one
+	if(next_input_state_ == input_->end())
+		--next_input_state_;
+}
+
+void PropagatingAnyWayPrivate::newOutputState(const Interface::iterator &it)
+{
+	// we just appended a state to the list, but the iterator doesn't see it anymore
+	// so let's point it at the new one
+	if(next_output_state_ == output_->end())
+		--next_output_state_;
 }
 
 
@@ -220,66 +222,26 @@ void PropagatingAnyWay::restrictDirection(PropagatingAnyWay::Direction dir)
 	initInterface();
 }
 
-bool PropagatingAnyWay::computeForward(const InterfaceState &from, planning_scene::PlanningScenePtr &to,
-                                       robot_trajectory::RobotTrajectoryPtr &trajectory, double &cost)
-{
-	// default implementation is void, needs override by user
-	return false;
+void PropagatingAnyWay::sendForward(const InterfaceState& from,
+                                           const planning_scene::PlanningSceneConstPtr& to,
+                                           const robot_trajectory::RobotTrajectoryPtr& t,
+                                           double cost){
+	IMPL(PropagatingAnyWay)
+	std::cout << "sending state forward" << std::endl;
+	SubTrajectory &trajectory = impl->addTrajectory(t, cost);
+	trajectory.setStartState(from);
+	impl->nextInput()->add(to, &trajectory, NULL);
 }
 
-bool PropagatingAnyWay::computeBackward(planning_scene::PlanningScenePtr &from, const InterfaceState &to,
-                                        robot_trajectory::RobotTrajectoryPtr &trajectory, double &cost)
-{
-	// default implementation is void, needs override by user
-	return false;
-}
-
-bool PropagatingAnyWay::canCompute() const
-{
-	IMPL(const PropagatingAnyWay);
-	if ((impl->dir & PropagatingAnyWay::FORWARD) && impl->hasStartState())
-		return true;
-	if ((impl->dir & PropagatingAnyWay::BACKWARD) && impl->hasEndState())
-		return true;
-	return false;
-}
-
-bool PropagatingAnyWay::compute()
-{
-	IMPL(PropagatingAnyWay);
-	bool result = false;
-	planning_scene::PlanningScenePtr ps;
-	robot_trajectory::RobotTrajectoryPtr trajectory;
-	double cost;
-	if ((impl->dir & PropagatingAnyWay::FORWARD) && impl->hasStartState()) {
-		const InterfaceState& from = impl->fetchStartState();
-		if (computeForward(from, ps, trajectory, cost) && ps
-		    && impl->sendForward(trajectory, from, ps, cost))
-			result |= true;
-	}
-	if ((impl->dir & PropagatingAnyWay::BACKWARD) && impl->hasEndState()) {
-		const InterfaceState& to = impl->fetchEndState();
-		if (computeBackward(ps, to, trajectory, cost) && ps
-		    && impl->sendBackward(trajectory, ps, to, cost))
-			result |= true;
-	}
-	return result;
-}
-
-void PropagatingAnyWayPrivate::newInputState(const Interface::iterator &it)
-{
-	// we just appended a state to the list, but the iterator doesn't see it anymore
-	// so let's point it at the new one
-	if(next_input_state_ == input_->end())
-		--next_input_state_;
-}
-
-void PropagatingAnyWayPrivate::newOutputState(const Interface::iterator &it)
-{
-	// we just appended a state to the list, but the iterator doesn't see it anymore
-	// so let's point it at the new one
-	if(next_output_state_ == output_->end())
-		--next_output_state_;
+void PropagatingAnyWay::sendBackward(const planning_scene::PlanningSceneConstPtr& from,
+                                            const InterfaceState& to,
+                                            const robot_trajectory::RobotTrajectoryPtr& t,
+                                            double cost){
+	IMPL(PropagatingAnyWay)
+	std::cout << "sending state backward" << std::endl;
+	SubTrajectory& trajectory = impl->addTrajectory(t, cost);
+	trajectory.setEndState(to);
+	impl->prevOutput()->add(from, NULL, &trajectory);
 }
 
 
@@ -319,15 +281,12 @@ SubTaskPrivate::InterfaceFlags GeneratorPrivate::announcedFlags() const {
 	return InterfaceFlags({WRITES_NEXT_INPUT,WRITES_PREV_OUTPUT});
 }
 
-inline void GeneratorPrivate::spawn(const planning_scene::PlanningSceneConstPtr &ps, double cost)
-{
-	// empty trajectory ref -> this node only produces states
-	robot_trajectory::RobotTrajectoryPtr dummy;
-	SubTrajectory& trajectory = addTrajectory(dummy, cost);
-	std::cout << "spawning state forwards and backwards" << std::endl;
-	prev_output_->add(ps, NULL, &trajectory);
-	next_input_->add(ps, &trajectory, NULL);
-	parent_->onNewColution();
+bool GeneratorPrivate::canCompute() const {
+	return static_cast<Generator*>(me_)->canCompute();
+}
+
+bool GeneratorPrivate::compute() {
+	return static_cast<Generator*>(me_)->compute();
 }
 
 
@@ -335,10 +294,15 @@ Generator::Generator(const std::string &name)
    : SubTask(new GeneratorPrivate(this, name))
 {}
 
-bool Generator::spawn(const planning_scene::PlanningSceneConstPtr& ps, double cost)
+void Generator::spawn(const planning_scene::PlanningSceneConstPtr& ps, double cost)
 {
+	std::cout << "spawning state forwards and backwards" << std::endl;
 	IMPL(Generator)
-	return impl->spawn(ps, cost);
+	// empty trajectory ref -> this node only produces states
+	robot_trajectory::RobotTrajectoryPtr dummy;
+	SubTrajectory& trajectory = impl->addTrajectory(dummy, cost);
+	impl->prevOutput()->add(ps, NULL, &trajectory);
+	impl->nextInput()->add(ps, &trajectory, NULL);
 }
 
 
@@ -352,19 +316,6 @@ ConnectingPrivate::ConnectingPrivate(Connecting *me, const std::__cxx11::string 
 
 SubTaskPrivate::InterfaceFlags ConnectingPrivate::announcedFlags() const {
 	return InterfaceFlags({READS_INPUT, READS_OUTPUT});
-}
-
-inline void ConnectingPrivate::connect(const robot_trajectory::RobotTrajectoryPtr &t, const InterfaceStatePair &state_pair, double cost)
-{
-	SubTrajectory& trajectory = addTrajectory(t, cost);
-	trajectory.setStartState(state_pair.first);
-	trajectory.setEndState(state_pair.second);
-}
-
-
-Connecting::Connecting(const std::string &name)
-   : SubTask(new ConnectingPrivate(this, name))
-{
 }
 
 void ConnectingPrivate::newInputState(const Interface::iterator& it)
@@ -381,24 +332,31 @@ void ConnectingPrivate::newOutputState(const Interface::iterator& it)
 		--it_pairs_.second;
 }
 
-bool Connecting::hasStatePair() const{
-	IMPL(const Connecting);
+bool ConnectingPrivate::canCompute() const{
 	// TODO: implement this properly
-	return impl->it_pairs_.first != impl->input_->end() &&
-	       impl->it_pairs_.second != impl->output_->end();
+	return it_pairs_.first != input_->end() &&
+	       it_pairs_.second != output_->end();
 }
 
-InterfaceStatePair Connecting::fetchStatePair(){
-	IMPL(Connecting);
+bool ConnectingPrivate::compute() {
 	// TODO: implement this properly
-	return std::pair<const InterfaceState&, const InterfaceState&>
-	      (*impl->it_pairs_.first, *(impl->it_pairs_.second++));
+	const InterfaceState& from = *it_pairs_.first;
+	const InterfaceState& to = *(it_pairs_.second++);
+	return static_cast<Connecting*>(me_)->compute(from, to);
 }
 
-void Connecting::connect(const robot_trajectory::RobotTrajectoryPtr& t, const InterfaceStatePair& state_pair, double cost)
+
+Connecting::Connecting(const std::string &name)
+   : SubTask(new ConnectingPrivate(this, name))
 {
+}
+
+void Connecting::connect(const InterfaceState& from, const InterfaceState& to,
+                         const robot_trajectory::RobotTrajectoryPtr& t, double cost) {
 	IMPL(Connecting)
-	impl->connect(t, state_pair, cost);
+	SubTrajectory& trajectory = impl->addTrajectory(t, cost);
+	trajectory.setStartState(from);
+	trajectory.setEndState(to);
 }
 
 } }
