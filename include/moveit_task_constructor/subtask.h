@@ -59,10 +59,6 @@ protected:
 	/// can only instantiated by derived classes
 	SubTask(SubTaskPrivate *impl);
 
-	/// methods called when a new InterfaceState was spawned
-	virtual void newInputState(const std::list<InterfaceState>::iterator&) {}
-	virtual void newOutputState(const std::list<InterfaceState>::iterator&) {}
-
 protected:
 	// TODO: use unique_ptr<SubTaskPrivate> and get rid of destructor
 	SubTaskPrivate* const pimpl_; // constness guarantees one initial write
@@ -91,10 +87,6 @@ protected:
 	// constructor for use in derived classes
 	PropagatingAnyWay(PropagatingAnyWayPrivate* impl);
 	void initInterface();
-
-	// get informed when new beginnings and endings become available
-	void newInputState(const std::list<InterfaceState>::iterator& it);
-	void newOutputState(const std::list<InterfaceState>::iterator& it);
 };
 
 
@@ -143,10 +135,6 @@ public:
 	InterfaceStatePair fetchStatePair();
 	void connect(const robot_trajectory::RobotTrajectoryPtr&,
 	             const InterfaceStatePair&, double cost = 0);
-
-protected:
-	virtual void newInputState(const std::list<InterfaceState>::iterator& it);
-	virtual void newOutputState(const std::list<InterfaceState>::iterator& it);
 };
 
 

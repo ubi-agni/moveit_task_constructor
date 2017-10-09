@@ -93,6 +93,10 @@ public:
 	                  double cost = 0);
 
 protected:
+	// get informed when new input or output state becomes available
+	void newInputState(const std::list<InterfaceState>::iterator& it);
+	void newOutputState(const std::list<InterfaceState>::iterator& it);
+
 	Interface::const_iterator next_input_state_;
 	Interface::const_iterator next_output_state_;
 };
@@ -140,6 +144,10 @@ public:
 	             const InterfaceStatePair& state_pair, double cost);
 
 private:
+	// get informed when new input or output state becomes available
+	void newInputState(const std::list<InterfaceState>::iterator& it);
+	void newOutputState(const std::list<InterfaceState>::iterator& it);
+
 	std::pair<Interface::const_iterator, Interface::const_iterator> it_pairs_;
 };
 

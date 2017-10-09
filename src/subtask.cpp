@@ -203,7 +203,7 @@ void PropagatingAnyWay::initInterface()
 	IMPL(PropagatingAnyWay)
 	if (impl->dir & PropagatingAnyWay::FORWARD) {
 		if (!impl->input_) { // keep existing interface if possible
-			impl->input_.reset(new Interface([this](const Interface::iterator& it) { newInputState(it); }));
+			impl->input_.reset(new Interface([impl](const Interface::iterator& it) { impl->newInputState(it); }));
 			impl->next_input_state_ = impl->input_->begin();
 		}
 	} else {
@@ -213,7 +213,7 @@ void PropagatingAnyWay::initInterface()
 
 	if (impl->dir & PropagatingAnyWay::BACKWARD) {
 		if (!impl->output_) { // keep existing interface if possible
-			impl->output_.reset(new Interface([this](const Interface::iterator& it) { newOutputState(it); }));
+			impl->output_.reset(new Interface([impl](const Interface::iterator& it) { impl->newOutputState(it); }));
 			impl->next_output_state_ = impl->output_->end();
 		}
 	} else {
@@ -278,22 +278,20 @@ bool PropagatingAnyWay::compute()
 	return result;
 }
 
-void PropagatingAnyWay::newInputState(const Interface::iterator &it)
+void PropagatingAnyWayPrivate::newInputState(const Interface::iterator &it)
 {
-	IMPL(PropagatingAnyWay);
 	// we just appended a state to the list, but the iterator doesn't see it anymore
 	// so let's point it at the new one
-	if(impl->next_input_state_ == impl->input_->end())
-		--impl->next_input_state_;
+	if(next_input_state_ == input_->end())
+		--next_input_state_;
 }
 
-void PropagatingAnyWay::newOutputState(const Interface::iterator &it)
+void PropagatingAnyWayPrivate::newOutputState(const Interface::iterator &it)
 {
-	IMPL(PropagatingAnyWay);
 	// we just appended a state to the list, but the iterator doesn't see it anymore
 	// so let's point it at the new one
-	if( impl->next_output_state_ == impl->output_->end() )
-		--impl->next_output_state_;
+	if(next_output_state_ == output_->end())
+		--next_output_state_;
 }
 
 
@@ -360,8 +358,8 @@ bool Generator::spawn(const planning_scene::PlanningSceneConstPtr& ps, double co
 ConnectingPrivate::ConnectingPrivate(Connecting *me, const std::__cxx11::string &name)
    : SubTaskPrivate(me, name)
 {
-	input_.reset(new Interface(std::bind(&Connecting::newInputState, me, std::placeholders::_1)));
-	output_.reset(new Interface(std::bind(&Connecting::newOutputState, me, std::placeholders::_1)));
+	input_.reset(new Interface([this](const Interface::iterator& it) { this->newInputState(it); }));
+	output_.reset(new Interface([this](const Interface::iterator& it) { this->newOutputState(it); }));
 	it_pairs_ = std::make_pair(input_->begin(), output_->begin());
 }
 
@@ -382,20 +380,18 @@ Connecting::Connecting(const std::string &name)
 {
 }
 
-void Connecting::newInputState(const Interface::iterator& it)
+void ConnectingPrivate::newInputState(const Interface::iterator& it)
 {
-	IMPL(Connecting);
 	// TODO: need to handle the pairs iterator
-	if( impl->it_pairs_.first == impl->input_->end() )
-		--impl->it_pairs_.first;
+	if(it_pairs_.first == input_->end())
+		--it_pairs_.first;
 }
 
-void Connecting::newOutputState(const Interface::iterator& it)
+void ConnectingPrivate::newOutputState(const Interface::iterator& it)
 {
-	IMPL(Connecting);
 	// TODO: need to handle the pairs iterator properly
-	if( impl->it_pairs_.second == impl->output_->end() )
-		--impl->it_pairs_.second;
+	if(it_pairs_.second == output_->end())
+		--it_pairs_.second;
 }
 
 bool Connecting::hasStatePair() const{
