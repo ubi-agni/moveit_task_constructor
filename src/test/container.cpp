@@ -79,7 +79,9 @@ protected:
 
 TEST_F(BaseTest, interfaceFlags) {
 	std::unique_ptr<Generator> g = std::make_unique<TestGenerator>();
-	EXPECT_EQ(g->interfaceFlags(), SubTask::InterfaceFlags({SubTask::WRITES_NEXT_INPUT, SubTask::WRITES_PREV_OUTPUT}));
+	EXPECT_EQ(g->pimpl_func()->interfaceFlags(),
+	          SubTaskPrivate::InterfaceFlags({SubTaskPrivate::WRITES_NEXT_INPUT,
+	                                          SubTaskPrivate::WRITES_PREV_OUTPUT}));
 }
 
 #define VALIDATE(...) \

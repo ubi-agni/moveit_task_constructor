@@ -65,21 +65,21 @@ bool ContainerBase::traverseStages(const ContainerBase::StageCallback &processor
 }
 
 
-SubTask::InterfaceFlags SerialContainerPrivate::announcedFlags() const {
-	SubTask::InterfaceFlags f;
+SubTaskPrivate::InterfaceFlags SerialContainerPrivate::announcedFlags() const {
+	InterfaceFlags f;
 	if (children().empty()) return f;
-	f |= children().front()->pimpl_func()->announcedFlags() & SubTask::INPUT_IF_MASK;
-	f |= children().back()->pimpl_func()->announcedFlags() & SubTask::OUTPUT_IF_MASK;
+	f |= children().front()->pimpl_func()->announcedFlags() & INPUT_IF_MASK;
+	f |= children().back()->pimpl_func()->announcedFlags() & OUTPUT_IF_MASK;
 	return f;
 }
 
 inline bool isConnectable(int prev_flags, int next_flags) {
-	return ((prev_flags & SubTask::WRITES_NEXT_INPUT) && (next_flags & SubTask::READS_INPUT)) ||
-	       ((prev_flags & SubTask::READS_OUTPUT) && (next_flags & SubTask::WRITES_PREV_OUTPUT));
+	return ((prev_flags & SubTaskPrivate::WRITES_NEXT_INPUT) && (next_flags & SubTaskPrivate::READS_INPUT)) ||
+	       ((prev_flags & SubTaskPrivate::READS_OUTPUT) && (next_flags & SubTaskPrivate::WRITES_PREV_OUTPUT));
 }
-inline bool bothWrite(SubTask::InterfaceFlags prev_flags, SubTask::InterfaceFlags next_flags) {
-	return (prev_flags.testFlag(SubTask::WRITES_NEXT_INPUT) && !next_flags.testFlag(SubTask::READS_INPUT)) &&
-	       (next_flags.testFlag(SubTask::WRITES_PREV_OUTPUT) && !prev_flags.testFlag(SubTask::READS_OUTPUT));
+inline bool bothWrite(SubTaskPrivate::InterfaceFlags prev_flags, SubTaskPrivate::InterfaceFlags next_flags) {
+	return (prev_flags.testFlag(SubTaskPrivate::WRITES_NEXT_INPUT) && !next_flags.testFlag(SubTaskPrivate::READS_INPUT)) &&
+	       (next_flags.testFlag(SubTaskPrivate::WRITES_PREV_OUTPUT) && !prev_flags.testFlag(SubTaskPrivate::READS_OUTPUT));
 }
 
 inline bool SerialContainerPrivate::canInsert(const SubTask &stage, ContainerBasePrivate::const_iterator before) const {
@@ -89,9 +89,9 @@ inline bool SerialContainerPrivate::canInsert(const SubTask &stage, ContainerBas
 	// check connectedness
 	bool at_end = (before == children().end());
 	const SubTaskPrivate* next = (at_end) ? this : (*before)->pimpl_func();
-	SubTask::InterfaceFlags cur_flags = stage.pimpl_func()->announcedFlags();
-	SubTask::InterfaceFlags next_flags = next->deducedFlags();
-	SubTask::InterfaceFlags prev_flags = prev(before)->deducedFlags();
+	InterfaceFlags cur_flags = stage.pimpl_func()->announcedFlags();
+	InterfaceFlags next_flags = next->deducedFlags();
+	InterfaceFlags prev_flags = prev(before)->deducedFlags();
 
 	// Do a simple check here only. A full connectivity check requires the full pipeline to be setup
 	// Thus, here we reject when trying to connect to writers with each other

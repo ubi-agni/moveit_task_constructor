@@ -51,7 +51,7 @@ public:
 		output_.reset(new Interface(Interface::NotifyFunction()));
 	}
 
-	SubTask::InterfaceFlags announcedFlags() const override;
+	InterfaceFlags announcedFlags() const override;
 	bool canInsert(const SubTask& stage, const_iterator before) const;
 	virtual iterator insert(value_type &&stage, const_iterator before) override;
 

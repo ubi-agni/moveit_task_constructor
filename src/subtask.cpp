@@ -11,14 +11,6 @@ SubTask::SubTask(SubTaskPrivate *impl)
 {
 }
 
-SubTask::InterfaceFlags SubTask::interfaceFlags() const
-{
-	SubTask::InterfaceFlags result = pimpl_->announcedFlags();
-	result &= ~SubTask::InterfaceFlags(SubTask::OWN_IF_MASK);
-	result |= pimpl_->deducedFlags();
-	return result;
-}
-
 SubTask::~SubTask()
 {
 	delete pimpl_;
@@ -33,12 +25,12 @@ std::ostream& operator<<(std::ostream &os, const SubTask& stage) {
 	return os;
 }
 
-template<SubTask::InterfaceFlag own, SubTask::InterfaceFlag other>
+template<SubTaskPrivate::InterfaceFlag own, SubTaskPrivate::InterfaceFlag other>
 const char* direction(const SubTaskPrivate& stage) {
-	SubTask::InterfaceFlags f = stage.deducedFlags();
+	SubTaskPrivate::InterfaceFlags f = stage.deducedFlags();
 	bool own_if = f & own;
 	bool other_if = f & other;
-	bool reverse = own & SubTask::INPUT_IF_MASK;
+	bool reverse = own & SubTaskPrivate::INPUT_IF_MASK;
 	if (own_if && other_if) return "<>";
 	if (!own_if && !other_if) return "--";
 	if (other_if ^ reverse) return "->";
@@ -53,9 +45,9 @@ std::ostream& operator<<(std::ostream &os, const SubTaskPrivate& stage) {
 		else os << "-";
 	}
 	// trajectories
-	os << std::setw(5) << direction<SubTask::READS_INPUT, SubTask::WRITES_PREV_OUTPUT>(stage)
+	os << std::setw(5) << direction<SubTaskPrivate::READS_INPUT, SubTaskPrivate::WRITES_PREV_OUTPUT>(stage)
 	   << std::setw(3) << stage.trajectories_.size()
-	   << std::setw(5) << direction<SubTask::READS_OUTPUT, SubTask::WRITES_NEXT_INPUT>(stage);
+	   << std::setw(5) << direction<SubTaskPrivate::READS_OUTPUT, SubTaskPrivate::WRITES_NEXT_INPUT>(stage);
 	// outputs
 	for (const Interface* i : {stage.output_.get(), stage.next_input_}) {
 		os << std::setw(3);
@@ -95,14 +87,22 @@ SubTrajectory& SubTaskPrivate::addTrajectory(const robot_trajectory::RobotTrajec
 	return trajectories_.back();
 }
 
-// return the interface flags that can be deduced from the interface
-inline SubTask::InterfaceFlags SubTaskPrivate::deducedFlags() const
+SubTaskPrivate::InterfaceFlags SubTaskPrivate::interfaceFlags() const
 {
-	SubTask::InterfaceFlags f;
-	if (input_)  f |= SubTask::READS_INPUT;
-	if (output_) f |= SubTask::READS_OUTPUT;
-	if (prevOutput()) f |= SubTask::WRITES_PREV_OUTPUT;
-	if (nextInput())  f |= SubTask::WRITES_NEXT_INPUT;
+	InterfaceFlags result = announcedFlags();
+	result &= ~InterfaceFlags(OWN_IF_MASK);
+	result |= deducedFlags();
+	return result;
+}
+
+// return the interface flags that can be deduced from the interface
+inline SubTaskPrivate::InterfaceFlags SubTaskPrivate::deducedFlags() const
+{
+	InterfaceFlags f;
+	if (input_)  f |= READS_INPUT;
+	if (output_) f |= READS_OUTPUT;
+	if (prevOutput()) f |= WRITES_PREV_OUTPUT;
+	if (nextInput())  f |= WRITES_NEXT_INPUT;
 	return f;
 }
 
@@ -130,12 +130,12 @@ PropagatingAnyWayPrivate::PropagatingAnyWayPrivate(PropagatingAnyWay *me, Propag
 {
 }
 
-SubTask::InterfaceFlags PropagatingAnyWayPrivate::announcedFlags() const {
-	SubTask::InterfaceFlags f;
+SubTaskPrivate::InterfaceFlags PropagatingAnyWayPrivate::announcedFlags() const {
+	InterfaceFlags f;
 	if (dir & PropagatingAnyWay::FORWARD)
-		f |= SubTask::InterfaceFlags({SubTask::READS_INPUT, SubTask::WRITES_NEXT_INPUT});
+		f |= InterfaceFlags({READS_INPUT, WRITES_NEXT_INPUT});
 	if (dir & PropagatingAnyWay::BACKWARD)
-		f |= SubTask::InterfaceFlags({SubTask::READS_OUTPUT, SubTask::WRITES_PREV_OUTPUT});
+		f |= InterfaceFlags({READS_OUTPUT, WRITES_PREV_OUTPUT});
 	return f;
 }
 
@@ -329,8 +329,8 @@ GeneratorPrivate::GeneratorPrivate(Generator *me, const std::__cxx11::string &na
    : SubTaskPrivate(me, name)
 {}
 
-SubTask::InterfaceFlags GeneratorPrivate::announcedFlags() const {
-	return SubTask::InterfaceFlags({SubTask::WRITES_NEXT_INPUT,SubTask::WRITES_PREV_OUTPUT});
+SubTaskPrivate::InterfaceFlags GeneratorPrivate::announcedFlags() const {
+	return InterfaceFlags({WRITES_NEXT_INPUT,WRITES_PREV_OUTPUT});
 }
 
 inline bool GeneratorPrivate::spawn(const planning_scene::PlanningSceneConstPtr &ps, double cost)
@@ -365,8 +365,8 @@ ConnectingPrivate::ConnectingPrivate(Connecting *me, const std::__cxx11::string 
 	it_pairs_ = std::make_pair(input_->begin(), output_->begin());
 }
 
-SubTask::InterfaceFlags ConnectingPrivate::announcedFlags() const {
-	return SubTask::InterfaceFlags({SubTask::READS_INPUT, SubTask::READS_OUTPUT});
+SubTaskPrivate::InterfaceFlags ConnectingPrivate::announcedFlags() const {
+	return InterfaceFlags({READS_INPUT, READS_OUTPUT});
 }
 
 inline void ConnectingPrivate::connect(const robot_trajectory::RobotTrajectoryPtr &t, const InterfaceStatePair &state_pair, double cost)

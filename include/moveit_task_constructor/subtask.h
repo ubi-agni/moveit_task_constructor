@@ -42,23 +42,9 @@ public:
 	inline SubTaskPrivate* pimpl_func() { return pimpl_; }
 
 	typedef std::unique_ptr<SubTask> pointer;
-	enum InterfaceFlag {
-		READS_INPUT        = 0x01,
-		READS_OUTPUT       = 0x02,
-		WRITES_NEXT_INPUT  = 0x04,
-		WRITES_PREV_OUTPUT = 0x08,
-
-		OWN_IF_MASK        = READS_INPUT | READS_OUTPUT,
-		EXT_IF_MASK        = WRITES_NEXT_INPUT | WRITES_PREV_OUTPUT,
-		INPUT_IF_MASK      = READS_INPUT | WRITES_PREV_OUTPUT,
-		OUTPUT_IF_MASK     = READS_OUTPUT | WRITES_NEXT_INPUT,
-	};
-	typedef Flags<InterfaceFlag> InterfaceFlags;
-	InterfaceFlags interfaceFlags() const;
 
 	~SubTask();
 	const std::string& getName() const;
-
 
 	// TODO: results from { TIMEOUT, EXHAUSTED, FINISHED, WAITING }
 	virtual bool canCompute() const = 0;

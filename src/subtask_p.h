@@ -19,8 +19,22 @@ public:
 
 	SubTaskPrivate(SubTask* me, const std::string& name);
 
-	SubTask::InterfaceFlags deducedFlags() const;
-	virtual SubTask::InterfaceFlags announcedFlags() const = 0;
+	enum InterfaceFlag {
+		READS_INPUT        = 0x01,
+		READS_OUTPUT       = 0x02,
+		WRITES_NEXT_INPUT  = 0x04,
+		WRITES_PREV_OUTPUT = 0x08,
+
+		OWN_IF_MASK        = READS_INPUT | READS_OUTPUT,
+		EXT_IF_MASK        = WRITES_NEXT_INPUT | WRITES_PREV_OUTPUT,
+		INPUT_IF_MASK      = READS_INPUT | WRITES_PREV_OUTPUT,
+		OUTPUT_IF_MASK     = READS_OUTPUT | WRITES_NEXT_INPUT,
+	};
+	typedef Flags<InterfaceFlag> InterfaceFlags;
+
+	InterfaceFlags interfaceFlags() const;
+	InterfaceFlags deducedFlags() const;
+	virtual InterfaceFlags announcedFlags() const = 0;
 	std::list<SubTrajectory>& trajectories() { return trajectories_; }
 
 public:
@@ -62,7 +76,7 @@ public:
 
 	inline PropagatingAnyWayPrivate(PropagatingAnyWay *me, PropagatingAnyWay::Direction dir,
 	                                const std::string &name);
-	SubTask::InterfaceFlags announcedFlags() const override;
+	InterfaceFlags announcedFlags() const override;
 
 	bool hasStartState() const;
 	const InterfaceState &fetchStartState();
@@ -111,7 +125,7 @@ private:
 class GeneratorPrivate : public SubTaskPrivate {
 public:
 	inline GeneratorPrivate(Generator *me, const std::string &name);
-	SubTask::InterfaceFlags announcedFlags() const override;
+	InterfaceFlags announcedFlags() const override;
 	bool spawn(const planning_scene::PlanningSceneConstPtr& ps, double cost);
 };
 
@@ -121,7 +135,7 @@ class ConnectingPrivate : public SubTaskPrivate {
 
 public:
 	inline ConnectingPrivate(Connecting *me, const std::string &name);
-	SubTask::InterfaceFlags announcedFlags() const override;
+	InterfaceFlags announcedFlags() const override;
 	void connect(const robot_trajectory::RobotTrajectoryPtr& t,
 	             const InterfaceStatePair& state_pair, double cost);
 
