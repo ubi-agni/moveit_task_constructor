@@ -279,9 +279,6 @@ void Task::publishAllSolutions(bool wait)
 
 void Task::onNewSolution(const SolutionBase &s)
 {
-	// no need to call WrapperBase::onNewSolution!
-	if (introspection_)
-		introspection_->publishSolution(s);
 }
 
 ContainerBase* Task::stages()
