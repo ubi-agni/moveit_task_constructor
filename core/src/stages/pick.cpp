@@ -22,6 +22,7 @@ PickPlaceBase::PickPlaceBase(Stage::pointer&& grasp_stage, const std::string& na
 	p.declare<std::string>("eef_parent_group", "JMG of eef's parent");
 
 	cartesian_solver_ = std::make_shared<solvers::CartesianPath>();
+	cartesian_solver_->setMaxVelocityScaling(0.1);
 	int insertion_position = forward ? -1 : 0; // insert children at end / front, i.e. normal or reverse order
 
 	auto init_ik_frame = [](const PropertyMap& other) -> boost::any {
