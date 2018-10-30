@@ -3,14 +3,24 @@
 
 """This module contains utility functions and classes for converting to
 YAML such as exceptions, Python version checking and type formatting.
+
+This also contains the correct YAML `Loader` and `Dumper` classes
+depending on whether LibYAML bindings are available.
 """
+
+from __future__ import print_function
 
 __author__ = 'Jan Ebert'
 
 import sys
 import traceback
 
-import yaml
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+    print('LibYAML is not available. Using slower PyYAML.\n'
+            'This may affect compatibility.')
 
 
 class TypeNotFoundError(Exception):
@@ -46,26 +56,25 @@ def raisefrom(from_ex, raise_ex):
         raise raise_ex
 
 
-def node_from_string(yml_str):
-    """Return a PyYAML node constructed from the given YAML string."""
-    return yaml.compose(yml_str)
-
-
-def formattypeof(obj):
-    """Return the type of the given object as a string without any
-    decoration.
+def iterdict(obj):
+    """Return an iterator yielding the given dictionary's keys and
+    values as tuples.
     """
-    return formattype(type(obj))
+    if pyge3:
+        return obj.items()
+    else:
+        return obj.iteritems()
 
 
-def formattype(typeval):
-    """Return the given type value as a string without any
-    decoration.
+def attributes_from_dict(obj, dict_, skip_none=False):
+    """Set the given object's attributes corresponding to the names and
+    values contained in the given dictionary.
+
+    Optionally skip `None`-values.
     """
-    typestring = str(typeval)
-    start = typestring.index("'") + 1
-    end = typestring.rindex("'")
-    return typestring[start:end]
+    for name, value in iterdict(dict_):
+        if not skip_none or value is not None:
+            setattr(obj, name, value)
 
 
 pyge3 = None

@@ -5,38 +5,36 @@
 properties to YAML and loading them later.
 """
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 __all__ = ['toyaml', 'fromyaml']
 __author__ = 'Jan Ebert'
 
 from genpy import rostime
-import yaml
+from yaml import add_multi_representer, add_multi_constructor
 
 from moveit.task_constructor.yaml import utils
 
 
-def _represent_rostime(dumper, rostime):
-    return dumper.represent_mapping(utils.formattypeof(rostime),
-            {'secs': rostime.secs, 'nsecs': rostime.nsecs})
+TAG_PREFIX = 'ROSTime.'
+"""How to prefix ROS times for the multi constructor.
+
+Arbitrary; but changing this value will break compatibility.
+"""
 
 
-def _construct_rostime(node):
-    cls_start_ix = node.tag.rfind('.') + 1
-    cls_str = node.tag[cls_start_ix:]
-    cls = getattr(rostime, cls_str)
-    args = {namenode.value: int(valnode.value)
-            for namenode, valnode in node.value}
+def _represent_rostime(dumper, rostime_):
+    return dumper.represent_mapping(TAG_PREFIX + type(rostime_).__name__,
+            {'secs': rostime_.secs, 'nsecs': rostime_.nsecs})
+
+
+def _construct_rostime(loader, tag_suffix, node):
+    cls = getattr(rostime, tag_suffix)
+    args = loader.construct_mapping(node)
     return cls(**args)
 
 
-def toyaml(rostime):
-    return yaml.dump(rostime)
-
-
-def fromyaml(node):
-    return _construct_rostime(node)
-
-
-yaml.add_multi_representer(rostime.TVal, _represent_rostime)
+add_multi_representer(rostime.TVal, _represent_rostime, Dumper=utils.Dumper)
+add_multi_constructor(TAG_PREFIX, _construct_rostime,
+        Loader=utils.Loader)
 

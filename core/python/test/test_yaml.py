@@ -3,8 +3,8 @@
 
 """This module supports tests for YAML conversion and deconversion.
 
-Each class has a module, name (in plural) and verbosity attribute that
-is used for generating tests and error messages.
+Each class has a name (in plural) and verbosity attribute which are used
+to generate error messages.
 """
 
 from __future__ import print_function
@@ -13,9 +13,9 @@ __author__ = 'Jan Ebert'
 
 import unittest
 
-import yaml
 from moveit_msgs.msg import JointConstraint, MoveGroupGoal
 
+from moveit.task_constructor.yaml import toyaml, fromyaml
 from moveit.task_constructor.yaml import rosmsg, stage
 from moveit.task_constructor import core, stages
 
@@ -32,11 +32,13 @@ def _dump_and_reconstruct(test, orig_obj, verbose=None):
     if verbose is None:
         verbose = test.verbose
 
-    yml = test.module.toyaml(orig_obj)
+    yml = toyaml(orig_obj)
+    with open('tmptest_ly.txt', 'w') as f:
+        f.write(yml)
     if verbose:
         print(yml)
 
-    recons_obj = test.module.fromyaml(yml)  # reconstructed
+    recons_obj = fromyaml(yml)  # reconstructed
     if isinstance(orig_obj, core.Stage):  # testing for equality does not work
         test.assertEqual(orig_obj.name, recons_obj.name)
         orig_props = orig_obj.properties
@@ -63,7 +65,6 @@ def _dump_and_reconstruct(test, orig_obj, verbose=None):
 class TestMsgs(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestMsgs, self).__init__(*args, **kwargs)
-        self.module = rosmsg
         self.name = 'Messages'
         self.verbose = False
 
@@ -77,7 +78,6 @@ class TestMsgs(unittest.TestCase):
 class TestStages(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestStages, self).__init__(*args, **kwargs)
-        self.module = stage
         self.name = 'Stages'
         self.verbose = False
 
