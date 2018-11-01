@@ -15,83 +15,63 @@ import unittest
 
 from moveit_msgs.msg import JointConstraint, MoveGroupGoal
 
-from moveit.task_constructor.yaml import toyaml, fromyaml
-from moveit.task_constructor.yaml import rosmsg, stage
+from moveit.task_constructor.yaml import toYaml, fromYaml
 from moveit.task_constructor import core, stages
 
 
-def _dump_and_reconstruct(test, orig_obj, verbose=None):
-    """Dump and reconstruct an object, then test whether the pre- and
-    post-conversion objects differ.
+class TestHelper(unittest.TestCase):
+    def _dump_and_reconstruct(self, original, verbose=None):
+        """Dump and reconstruct an object, then test whether the pre- and
+        post-conversion objects differ.
+        """
+        if verbose is None:
+            verbose = self.verbose
 
-    Override test class verbosity option with the extra parameter.
-    """
-    if not isinstance(test, unittest.TestCase):
-        raise TypeError('Please make sure the first argument is derived from '
-                'unittest.TestCase')
-    if verbose is None:
-        verbose = test.verbose
+        yml = toYaml(original)
+        if verbose:
+            print(yml)
 
-    yml = toyaml(orig_obj)
-    with open('tmptest_ly.txt', 'w') as f:
-        f.write(yml)
-    if verbose:
-        print(yml)
-
-    recons_obj = fromyaml(yml)  # reconstructed
-    if isinstance(orig_obj, core.Stage):  # testing for equality does not work
-        test.assertEqual(orig_obj.name, recons_obj.name)
-        orig_props = orig_obj.properties
-        recons_props = recons_obj.properties
-
-        # compare size of properties (do not trust sys.sizeof() for user types)
-        orig_len = 0
-        recons_len = 0
-        for _ in orig_props:
-            orig_len += 1
-        for _ in recons_props:
-            recons_len += 1
-        test.assertEqual(orig_len, recons_len)
-
-        for name, value in orig_obj.properties:
-            test.assertEqual(value, recons_props[name])
-    else:
-        test.assertEqual(orig_obj, recons_obj,
-                ('{} are not equal.\n----- Original: -----\n{}\n\n'
-                '----- Reconstructed: -----\n{}').format(
-                test.name, orig_obj, recons_obj))
+        restored = fromYaml(yml)  # reconstructed
+        if isinstance(original, core.Stage):  # testing for equality does not work
+            self.assertEqual(original.name, restored.name)
+            for name, value in original.properties:
+                self.assertEqual(value, restored.properties[name])
+        else:
+            self.assertEqual(original, restored,
+                    ('{} are not equal.\n----- Original: -----\n{}\n\n'
+                    '----- Restored: -----\n{}').format(
+                    self.name, original, restored))
 
 
-class TestMsgs(unittest.TestCase):
+class TestMsgs(TestHelper):
     def __init__(self, *args, **kwargs):
         super(TestMsgs, self).__init__(*args, **kwargs)
         self.name = 'Messages'
         self.verbose = False
 
     def test_JointConstraint(self):
-        _dump_and_reconstruct(self, JointConstraint('test', 1, 2, 3, 4))
+        self._dump_and_reconstruct(JointConstraint('test', 1, 2, 3, 4))
 
     def test_MoveGroupGoal(self):
-        _dump_and_reconstruct(self, MoveGroupGoal())
+        self._dump_and_reconstruct(MoveGroupGoal())
 
 
-class TestStages(unittest.TestCase):
+class TestStages(TestHelper):
     def __init__(self, *args, **kwargs):
         super(TestStages, self).__init__(*args, **kwargs)
         self.name = 'Stages'
         self.verbose = False
 
     def test_FixedState(self):
-        _dump_and_reconstruct(self, stages.FixedState('fixed'))
+        self._dump_and_reconstruct(stages.FixedState('fixed'))
 
     def test_Connect(self):
         planner = core.PipelinePlanner()
         planner2 = core.PipelinePlanner()
         stage = stages.Connect('connect',
                 [('planner', planner), ('planner2', planner2)])
-        _dump_and_reconstruct(self, stage)
+        self._dump_and_reconstruct(stage)
 
 
 if __name__ == '__main__':
     unittest.main()
-

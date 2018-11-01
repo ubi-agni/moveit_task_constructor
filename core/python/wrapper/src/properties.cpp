@@ -207,11 +207,12 @@ void export_properties()
 #endif
 
 	bp::class_<PropertyMap, boost::noncopyable>("PropertyMap")
+	      .def("__contains__", &PropertyMap::hasProperty)
 	      .def("__getitem__", &PropertyMap_get)
 	      .def("__setitem__", &PropertyMap_set)
+	      .def("__iter__", bp::iterator<PropertyMap>())
 	      .def("reset", &PropertyMap::reset, "reset all properties to their defaults")
 	      .def("update", &PropertyMap_update)
-	      .def("__iter__", bp::iterator<PropertyMap>())
 	      .def("configureInitFrom", &PropertyMap_configureInitFrom,
 	           PropertyMap_configureInitFrom_overloads())
 	      .def("exposeTo", &PropertyMap_exposeTo_1)
