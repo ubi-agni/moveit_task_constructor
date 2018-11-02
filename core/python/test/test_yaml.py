@@ -20,6 +20,10 @@ from moveit.task_constructor import core, stages
 
 
 class TestHelper(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestHelper, self).__init__(*args, **kwargs)
+        self.verbose = False
+
     def _dump_and_reconstruct(self, original, verbose=None):
         """Dump and reconstruct an object, then test whether the pre- and
         post-conversion objects differ.
@@ -32,8 +36,12 @@ class TestHelper(unittest.TestCase):
             print(yml)
 
         restored = fromYaml(yml)  # reconstructed
-        if isinstance(original, core.Stage):  # testing for equality does not work
-            self.assertEqual(original.name, restored.name)
+        if isinstance(original, core.Stage) or isinstance(original, core.Task):  # testing for equality does not work
+            try:
+                self.assertEqual(original.name, restored.name)
+            except AttributeError:
+                pass
+
             for name, value in original.properties:
                 self.assertEqual(value, restored.properties[name])
         else:
@@ -47,7 +55,6 @@ class TestMsgs(TestHelper):
     def __init__(self, *args, **kwargs):
         super(TestMsgs, self).__init__(*args, **kwargs)
         self.name = 'Messages'
-        self.verbose = False
 
     def test_JointConstraint(self):
         self._dump_and_reconstruct(JointConstraint('test', 1, 2, 3, 4))
@@ -60,10 +67,16 @@ class TestStages(TestHelper):
     def __init__(self, *args, **kwargs):
         super(TestStages, self).__init__(*args, **kwargs)
         self.name = 'Stages'
-        self.verbose = False
 
     def test_FixedState(self):
         self._dump_and_reconstruct(stages.FixedState('fixed'))
+
+    def test_Task(self):
+        task = core.Task()
+        task.add(stages.CurrentState("current"))
+        task.add(stages.Connect("connect", []))
+        task.add(stages.FixedState())
+        self._dump_and_reconstruct(task)
 
     def test_Connect(self):
         planner = core.PipelinePlanner()
