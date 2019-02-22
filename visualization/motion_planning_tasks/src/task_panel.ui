@@ -42,6 +42,13 @@
       </spacer>
      </item>
      <item>
+      <widget class="QToolButton" name="button_exec_solution">
+       <property name="text">
+        <string>Exec</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QToolButton" name="button_show_stage_dock_widget">
        <property name="text">
         <string>...</string>
