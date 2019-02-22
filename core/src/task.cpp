@@ -318,12 +318,7 @@ void Task::publishAllSolutions(bool wait) {
 	pimpl()->introspection_->publishAllSolutions(wait);
 }
 
-void Task::onNewSolution(const SolutionBase& s) {
-	auto impl = pimpl();
-	// no need to call WrapperBase::onNewSolution!
-	if (impl->introspection_)
-		impl->introspection_->publishSolution(s);
-}
+void Task::onNewSolution(const SolutionBase& s) {}
 
 ContainerBase* Task::stages() {
 	return static_cast<ContainerBase*>(WrapperBase::wrapped());
