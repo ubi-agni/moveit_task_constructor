@@ -34,81 +34,73 @@
 
 #include <moveit/task_constructor/task.h>
 
-#include <moveit/task_constructor/stages/fixed_state.h>
+#include <moveit/task_constructor/stages/current_state.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
 #include <moveit/task_constructor/solvers/joint_interpolation.h>
 #include <moveit/task_constructor/stages/move_to.h>
 #include <moveit/task_constructor/stages/move_relative.h>
 #include <moveit/task_constructor/stages/connect.h>
+#include <moveit/task_constructor/container.h>
 
 #include <ros/ros.h>
 #include <moveit/planning_scene/planning_scene.h>
 
 using namespace moveit::task_constructor;
 
-Task createTask() {
-	Task t;
-	t.stages()->setName("Cartesian Path");
-
-	const std::string group = "panda_arm";
+std::unique_ptr<SerialContainer> createModule(const std::string& group) {
+	auto c = std::make_unique<SerialContainer>("Cartesian Path");
+	c->setProperty("group", group);
 
 	// create Cartesian interpolation "planner" to be used in stages
 	auto cartesian = std::make_shared<solvers::CartesianPath>();
 
-	// start from a fixed robot state
-	t.loadRobotModel();
-	auto scene = std::make_shared<planning_scene::PlanningScene>(t.getRobotModel());
-	{
-		auto& state = scene->getCurrentStateNonConst();
-		state.setToDefaultValues(state.getJointModelGroup(group), "ready");
-
-		auto fixed = std::make_unique<stages::FixedState>("initial state");
-		fixed->setState(scene);
-		t.add(std::move(fixed));
-	}
-
 	{
 		auto stage = std::make_unique<stages::MoveRelative>("x +0.2", cartesian);
-		stage->setGroup(group);
+		stage->properties().configureInitFrom(Stage::PARENT, { "group" });
 		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.x = 0.2;
 		stage->setDirection(direction);
-		t.add(std::move(stage));
+		c->insert(std::move(stage));
 	}
 
 	{
-		auto move = std::make_unique<stages::MoveRelative>("y -0.3", cartesian);
-		move->setGroup(group);
+		auto stage = std::make_unique<stages::MoveRelative>("y -0.3", cartesian);
+		stage->properties().configureInitFrom(Stage::PARENT);
 		geometry_msgs::Vector3Stamped direction;
 		direction.header.frame_id = "world";
 		direction.vector.y = -0.3;
-		move->setDirection(direction);
-		t.add(std::move(move));
+		stage->setDirection(direction);
+		c->insert(std::move(stage));
 	}
 
 	{  // rotate about TCP
-		auto move = std::make_unique<stages::MoveRelative>("rx +90°", cartesian);
-		move->setGroup(group);
+		auto stage = std::make_unique<stages::MoveRelative>("rx +90°", cartesian);
+		stage->properties().configureInitFrom(Stage::PARENT);
 		geometry_msgs::TwistStamped twist;
 		twist.header.frame_id = "world";
 		twist.twist.angular.z = M_PI / 4.;
-		move->setDirection(twist);
-		t.add(std::move(move));
+		stage->setDirection(twist);
+		c->insert(std::move(stage));
 	}
 
-	{  // move from reached state back to the original state, using joint interpolation
-		auto joint_interpolation = std::make_shared<solvers::JointInterpolationPlanner>();
-		stages::Connect::GroupPlannerVector planners = { { group, joint_interpolation } };
-		auto connect = std::make_unique<stages::Connect>("connect", planners);
-		t.add(std::move(connect));
+	{  // move back to ready pose
+		auto stage = std::make_unique<stages::MoveTo>("moveTo ready", cartesian);
+		stage->properties().configureInitFrom(Stage::PARENT);
+		stage->setGoal("ready");
+		c->insert(std::move(stage));
 	}
+	return c;
+}
 
-	{  // final state is original state again
-		auto fixed = std::make_unique<stages::FixedState>("final state");
-		fixed->setState(scene);
-		t.add(std::move(fixed));
-	}
+Task createTask() {
+	Task t;
+	t.stages()->setName("Reusable Containers");
+	t.add(std::make_unique<stages::CurrentState>("current"));
+
+	const std::string group = "panda_arm";
+	t.add(createModule(group));
+	t.add(createModule(group));
 
 	return t;
 }
