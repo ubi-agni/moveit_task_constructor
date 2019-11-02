@@ -92,7 +92,7 @@ Task createTask() {
 		move->setGroup(group);
 		geometry_msgs::TwistStamped twist;
 		twist.header.frame_id = "world";
-		twist.twist.angular.z = M_PI / 4.;
+		twist.twist.angular.z = M_PI / 2.;
 		move->setDirection(twist);
 		t.add(std::move(move));
 	}
