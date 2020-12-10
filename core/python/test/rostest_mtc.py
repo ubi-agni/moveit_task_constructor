@@ -11,6 +11,27 @@ from std_msgs.msg import Header
 import rospy
 
 
+class PyGenerator(core.Generator):
+    def __init__(self, name="python generator"):
+        core.Generator.__init__(self, name)
+        self.num = 5
+
+    # def init(self, robot):
+    #     print("INIT")
+    #     core.Generator.init(self, robot)
+
+    def reset(self):
+        print('RESET')
+        #core.Generator.reset(self)
+
+    def canCompute(self):
+        return self.num > 0
+
+    def compute(self):
+        self.num -= 1
+        print("compute called")
+
+
 class Test(unittest.TestCase):
     PLANNING_GROUP = "manipulator"
 
@@ -66,7 +87,13 @@ class Test(unittest.TestCase):
         if task.plan():
             task.publish(task.solutions[0])
 
+    def test_PyGenerator(self):
+        task = core.Task()
+        keep_alive = PyGenerator()
+        task.add(keep_alive)
+        task.plan()
+
 
 if __name__ == '__main__':
     roscpp_init("test_mtc")
-    rostest.rosrun("", "", Test)
+    unittest.main()

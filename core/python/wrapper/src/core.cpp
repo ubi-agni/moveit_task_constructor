@@ -1,8 +1,6 @@
+#include "core.h"
 #include <moveit/python/task_constructor/properties.h>
-#include <moveit/task_constructor/stage.h>
-#include <moveit/task_constructor/container.h>
 #include <moveit/task_constructor/container_p.h>
-#include <moveit/task_constructor/task.h>
 #include <moveit_task_constructor_msgs/Solution.h>
 
 #include <moveit/planning_scene/planning_scene.h>
@@ -96,7 +94,7 @@ void export_core(pybind11::module& m) {
 		     py::keep_alive<0, 1>())
 		;
 
-	auto stage = properties::class_<Stage>(m, "Stage")
+	auto stage = properties::class_<Stage, PyStage<>>(m, "Stage")
 		.property<double>("timeout")
 		.property<std::string>("marker_ns")
 		.def_property("forwarded_properties", getForwardedProperties, setForwardedProperties)
@@ -115,21 +113,55 @@ void export_core(pybind11::module& m) {
 		;
 
 
-	auto either_way = py::class_<PropagatingEitherWay, Stage>(m, "PropagatingEitherWay")
-		.def("restrictDirection", &PropagatingEitherWay::restrictDirection);
+	auto either_way = py::class_<PropagatingEitherWay, Stage, PyPropagatingEitherWay<>>(m, "PropagatingEitherWay")
+		.def("restrictDirection", &PropagatingEitherWay::restrictDirection)
+		.def("computeForward", &PropagatingEitherWay::computeForward)
+		.def("computeBackward", &PropagatingEitherWay::computeBackward)
+		//.def("sendForward", &PropagatingEitherWay::sendForward)
+		//.def("sendBackward", &PropagatingEitherWay::sendBackward)
+		;
 
 	py::enum_<PropagatingEitherWay::Direction>(either_way, "Direction")
 		.value("AUTO", PropagatingEitherWay::AUTO)
 		.value("FORWARD", PropagatingEitherWay::FORWARD)
 		.value("BACKWARD", PropagatingEitherWay::BACKWARD);
 
-	py::class_<MonitoringGenerator, Stage>(m, "MonitoringGenerator")
-		.def("setMonitoredStage", &MonitoringGenerator::setMonitoredStage);
+	py::class_<PropagatingForward, Stage, PyPropagatingEitherWay<PropagatingForward>>(m, "PropagatingForward")
+		.def("computeForward", &PropagatingEitherWay::computeForward)
+		//.def("sendForward", &PropagatingEitherWay::sendForward)
+		;
+	py::class_<PropagatingBackward, Stage, PyPropagatingEitherWay<PropagatingBackward>>(m, "PropagatingBackward")
+		.def("computeBackward", &PropagatingEitherWay::computeBackward)
+		//.def("sendBackward", &PropagatingEitherWay::sendBackward)
+		;
 
-	py::class_<ContainerBase, Stage>(m, "ContainerBase")
+	properties::class_<Generator, Stage, PyGenerator<>>(m, "Generator")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("generator"))
+		.def("canCompute", &Generator::canCompute)
+		.def("compute", &Generator::compute)
+		;
+
+	properties::class_<MonitoringGenerator, Generator, PyMonitoringGenerator<>>(m, "MonitoringGenerator")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("generator"))
+		.def("setMonitoredStage", &MonitoringGenerator::setMonitoredStage)
+		.def("_onNewSolution", &PubMonitoringGenerator::onNewSolution)
+		;
+
+	properties::class_<Connecting, Stage, PyConnecting<>>(m, "Connecting")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("connecting"))
+		.def("compute", &Connecting::compute)
+		.def("_compatible", &PubConnecting::compatible)
+		;
+
+	py::class_<ContainerBase, Stage, PyContainerBase<>>(m, "ContainerBase")
 		.def("add", &ContainerBase::add)
 		.def("insert", &ContainerBase::insert, py::arg("stage"), py::arg("before") = -1)
+		.def("remove", static_cast<Stage::pointer (ContainerBase::*)(int)>(&ContainerBase::remove))
+		.def("remove", static_cast<Stage::pointer (ContainerBase::*)(Stage*)>(&ContainerBase::remove))
 		.def("clear", &ContainerBase::clear)
+		.def("canCompute", &ContainerBase::canCompute)
+		.def("compute", &ContainerBase::compute)
+		.def("onNewSolution", &ContainerBase::onNewSolution)
 		.def("__len__", &ContainerBase::numChildren)
 		.def("__getitem__", [](const ContainerBase &c, const std::string &name) -> Stage* {
 			Stage* child = c.findChild(name);

@@ -59,7 +59,7 @@ void export_stages(pybind11::module& m) {
 
 	properties::class_<FixedState, Stage>(m, "FixedState")
 		.def(py::init<const std::string&>(), py::arg("name") = std::string("fixed state"))
-      #if 0
+#if 0
 		.def("setState", [](FixedState& stage, const moveit_msg::PlanningScene& scene_msg) {
 			// TODO: How to initialize the PlanningScene?
 			planning_scene::PlanningScenePtr scene;
