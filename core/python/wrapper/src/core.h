@@ -47,8 +47,8 @@ class PyPropagatingEitherWay : public PyStage<T>
 {
 public:
 	using PyStage<T>::PyStage;
-	void computeForward(const InterfaceState& from) override { PYBIND11_OVERRIDE_PURE(void, T, computeForward, from); }
-	void computeBackward(const InterfaceState& to) override { PYBIND11_OVERRIDE_PURE(void, T, computeBackward, to); }
+	void computeForward(const InterfaceState& from_state) override { PYBIND11_OVERRIDE_PURE(void, T, computeForward, from_state); }
+	void computeBackward(const InterfaceState& to_state) override { PYBIND11_OVERRIDE_PURE(void, T, computeBackward, to_state); }
 };
 
 template <class T = Connecting>
@@ -56,8 +56,8 @@ class PyConnecting : public PyStage<T>
 {
 public:
 	using PyStage<T>::PyStage;
-	void compute(const InterfaceState& from, const InterfaceState& to) override {
-		PYBIND11_OVERRIDE_PURE(void, T, compute, from, to);
+	void compute(const InterfaceState& from_state, const InterfaceState& to_state) override {
+		PYBIND11_OVERRIDE_PURE(void, T, compute, from_state, to_state);
 	}
 	bool compatible(const InterfaceState& from_state, const InterfaceState& to_state) const override {
 		PYBIND11_OVERRIDE(bool, T, compatible, from_state, to_state);

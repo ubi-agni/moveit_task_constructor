@@ -114,6 +114,7 @@ void export_core(pybind11::module& m) {
 
 
 	auto either_way = py::class_<PropagatingEitherWay, Stage, PyPropagatingEitherWay<>>(m, "PropagatingEitherWay")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("PropagatingEitherWay"))
 		.def("restrictDirection", &PropagatingEitherWay::restrictDirection)
 		.def("computeForward", &PropagatingEitherWay::computeForward)
 		.def("computeBackward", &PropagatingEitherWay::computeBackward)
@@ -127,10 +128,12 @@ void export_core(pybind11::module& m) {
 		.value("BACKWARD", PropagatingEitherWay::BACKWARD);
 
 	py::class_<PropagatingForward, Stage, PyPropagatingEitherWay<PropagatingForward>>(m, "PropagatingForward")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("PropagatingForward"))
 		.def("computeForward", &PropagatingEitherWay::computeForward)
 		//.def("sendForward", &PropagatingEitherWay::sendForward)
 		;
 	py::class_<PropagatingBackward, Stage, PyPropagatingEitherWay<PropagatingBackward>>(m, "PropagatingBackward")
+		.def(py::init<const std::string&>(), py::arg("name") = std::string("PropagatingBackward"))
 		.def("computeBackward", &PropagatingEitherWay::computeBackward)
 		//.def("sendBackward", &PropagatingEitherWay::sendBackward)
 		;
@@ -151,6 +154,9 @@ void export_core(pybind11::module& m) {
 		.def(py::init<const std::string&>(), py::arg("name") = std::string("connecting"))
 		.def("compute", &Connecting::compute)
 		.def("_compatible", &PubConnecting::compatible)
+		;
+
+	properties::class_<InterfaceState>(m, "InterfaceState")
 		;
 
 	py::class_<ContainerBase, Stage, PyContainerBase<>>(m, "ContainerBase")
