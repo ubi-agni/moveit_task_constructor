@@ -16,8 +16,8 @@ class TestTrampolines(unittest.TestCase):
     """ Test the functionality of pybind11 trampoline classes.
     - Python classes are able to inherit from C++ base classes, which are
       exposed to python through trampoline classes and bindings.
-    - Test for overriding of virtual inheritance of memberfunctions
-      and general correct construction of the classes.
+    - Test for overriding of virtual inheritance of member functions
+      and correct construction of the classes.
     """
 
     def check(self, test_class, **kvargs):
