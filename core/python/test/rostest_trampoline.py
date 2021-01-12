@@ -30,19 +30,19 @@ class TestTrampolines(unittest.TestCase):
             2. Inheritance structure
         """
 
-        def _checkBases():
+        def _checkBases(test_class):
             """ Check inheritance stucture.
             - Performed tests:
                 1. Number of base classes
             """
 
             self.assertEqual(
-                len(bases),
+                len(test_class.__class__.__bases__),
                 1,
                 msg="Class '" + type(test_class).__name__ +
                 "' must only inherit from a single base class.")
 
-        def _checkParameters():
+        def _checkParameters(test_class):
             """ Check correct assignment of standard parametes.
             - Tests are only executed if the corresponding key value pair
               is given in the kwargs.
@@ -53,12 +53,9 @@ class TestTrampolines(unittest.TestCase):
             if "name" in kwargs:
                 self.assertEqual(test_class.name, kwargs.get("name"))
 
-        # get the base classes of the derived instance
-        bases = test_class.__class__.__bases__
-
         # perform checks
-        _checkParameters()
-        _checkBases()
+        _checkParameters(test_class)
+        _checkBases(test_class)
 
     def test_connecting(self):
         def checkInTask(test_class):
