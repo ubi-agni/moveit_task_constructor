@@ -20,13 +20,13 @@ class TestTrampolines(unittest.TestCase):
       and correct construction of the classes.
     """
 
-    def check(self, test_class, **kvargs):
+    def check(self, test_class, **kwargs):
         """Test a trampoline class.
         - Parameter:
             1. test_class: Contains the class to be tested.
-            2. kvargs: Contain the parameters to be tested.
+            2. kwargs: Contain the parameters to be tested.
         - Tests:
-            1. Constructor parameters from kvargs (e.g. "name")
+            1. Constructor parameters from kwargs (e.g. "name")
             2. Inheritance structure
         """
 
@@ -45,13 +45,13 @@ class TestTrampolines(unittest.TestCase):
         def _checkParameters():
             """ Check correct assignment of standard parametes.
             - Tests are only executed if the corresponding key value pair
-              is given in the kvargs.
-            - Possible tests depending on kvargs:
+              is given in the kwargs.
+            - Possible tests depending on kwargs:
                 1. name check
             """
 
-            if "name" in kvargs:
-                self.assertEqual(test_class.name, kvargs.get("name"))
+            if "name" in kwargs:
+                self.assertEqual(test_class.name, kwargs.get("name"))
 
         # get the base classes of the derived instance
         bases = test_class.__class__.__bases__
@@ -81,11 +81,11 @@ class TestTrampolines(unittest.TestCase):
             def compute(self, from_state, to_state):
                 print('compute called')
 
-        kvargs = {'name': 'Connecting'}
-        extConnecting = extConnecting(kvargs.get('name'))
+        kwargs = {'name': 'Connecting'}
+        extConnecting = extConnecting(kwargs.get('name'))
 
         # check parameters and base classes
-        self.check(extConnecting, **kvargs)
+        self.check(extConnecting, **kwargs)
 
         # check task insertion
         checkInTask(extConnecting)
@@ -118,9 +118,9 @@ class TestTrampolines(unittest.TestCase):
                 self.num -= 1
                 print("compute called")
 
-        kvargs = {"name": 'Generator'}
-        extGenerator = extGenerator(kvargs.get('name'))
-        self.check(extGenerator, **kvargs)
+        kwargs = {"name": 'Generator'}
+        extGenerator = extGenerator(kwargs.get('name'))
+        self.check(extGenerator, **kwargs)
 
         # check task insertion
         checkInTask(extGenerator)
@@ -155,9 +155,9 @@ class TestTrampolines(unittest.TestCase):
             def onNewSolution(self, s):
                 print('onNewSolution called')
 
-        kvargs = {'name': 'MonitoringGenerator'}
-        extMonitoringGenerator = extMonitoringGenerator(kvargs.get('name'))
-        self.check(extMonitoringGenerator, **kvargs)
+        kwargs = {'name': 'MonitoringGenerator'}
+        extMonitoringGenerator = extMonitoringGenerator(kwargs.get('name'))
+        self.check(extMonitoringGenerator, **kwargs)
 
         # check task insertion
         checkInTask(extMonitoringGenerator)
@@ -187,9 +187,9 @@ class TestTrampolines(unittest.TestCase):
             def computeBackward(self, to_state):
                 print('compute backward')
 
-        kvargs = {'name': 'PropagatingEitherWay'}
-        extPropagatingEitherWay = extPropagatingEitherWay(kvargs.get('name'))
-        self.check(extPropagatingEitherWay, **kvargs)
+        kwargs = {'name': 'PropagatingEitherWay'}
+        extPropagatingEitherWay = extPropagatingEitherWay(kwargs.get('name'))
+        self.check(extPropagatingEitherWay, **kwargs)
 
         # check task insertion
         checkInTask(extPropagatingEitherWay)
