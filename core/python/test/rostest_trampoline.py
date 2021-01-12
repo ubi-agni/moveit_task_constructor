@@ -79,13 +79,13 @@ class TestTrampolines(unittest.TestCase):
                 print('compute called')
 
         kwargs = {'name': 'Connecting'}
-        extConnecting = extConnecting(kwargs.get('name'))
+        conn = extConnecting(kwargs.get('name'))
 
         # check parameters and base classes
-        self.check(extConnecting, **kwargs)
+        self.check(conn, **kwargs)
 
         # check task insertion
-        checkInTask(extConnecting)
+        checkInTask(conn)
 
     def test_generator(self):
         def checkInTask(test_class):
@@ -116,11 +116,11 @@ class TestTrampolines(unittest.TestCase):
                 print("compute called")
 
         kwargs = {"name": 'Generator'}
-        extGenerator = extGenerator(kwargs.get('name'))
-        self.check(extGenerator, **kwargs)
+        gen = extGenerator(kwargs.get('name'))
+        self.check(gen, **kwargs)
 
         # check task insertion
-        checkInTask(extGenerator)
+        checkInTask(gen)
 
     @unittest.skip("Monitoring Generator is not yet ready.")
     def test_monitoringGenerator(self):
@@ -153,11 +153,11 @@ class TestTrampolines(unittest.TestCase):
                 print('onNewSolution called')
 
         kwargs = {'name': 'MonitoringGenerator'}
-        extMonitoringGenerator = extMonitoringGenerator(kwargs.get('name'))
-        self.check(extMonitoringGenerator, **kwargs)
+        mgen = extMonitoringGenerator(kwargs.get('name'))
+        self.check(mgen, **kwargs)
 
         # check task insertion
-        checkInTask(extMonitoringGenerator)
+        checkInTask(mgen)
 
     def test_propagatingEitherWay(self):
         def checkInTask(test_class):
@@ -185,11 +185,11 @@ class TestTrampolines(unittest.TestCase):
                 print('compute backward')
 
         kwargs = {'name': 'PropagatingEitherWay'}
-        extPropagatingEitherWay = extPropagatingEitherWay(kwargs.get('name'))
-        self.check(extPropagatingEitherWay, **kwargs)
+        prop = extPropagatingEitherWay(kwargs.get('name'))
+        self.check(prop, **kwargs)
 
         # check task insertion
-        checkInTask(extPropagatingEitherWay)
+        checkInTask(prop)
 
 
 if __name__ == '__main__':
