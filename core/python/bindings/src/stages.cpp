@@ -232,8 +232,7 @@ void export_stages(pybind11::module& m) {
 			ComputeIK(name, stage)
 
 			Wrapper for any pose generator stage to compute the inverse
-			kinematics for a pose in
-			cartesian space.
+			kinematics for a pose in Cartesian space.
 
 			The wrapper reads a ``target_pose`` from the interface state of
 			solutions provided by the wrapped stage. This cartesian pose
