@@ -46,8 +46,7 @@ void export_stages(pybind11::module& m);
 }  // namespace moveit
 
 PYBIND11_MODULE(pymoveit_mtc, m) {
-	// disable function signatures in generated
-	// documentation
+	// disable function signatures in generated documentation
 	pybind11::options options;
 	options.disable_function_signatures();
 
