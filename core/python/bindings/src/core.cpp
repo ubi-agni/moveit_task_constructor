@@ -562,7 +562,8 @@ void export_core(pybind11::module& m) {
 		.def_property("name", &Task::name, &Task::setName, R"pbdoc(
 			str: Set the name property of the task.
 		)pbdoc")
-		.def("loadRobotModel", &Task::loadRobotModel, R"pbdoc(
+		.def("loadRobotModel", &Task::loadRobotModel, py::arg("robot_description") = "robot_description",
+			R"pbdoc(
 			loadRobotModel(robot_description)
 
 			Args:
@@ -572,6 +573,7 @@ void export_core(pybind11::module& m) {
 
 			Load robot model from given parameter.
 			)pbdoc")
+		.def("getRobotModel", &Task::getRobotModel)
 		.def("enableIntrospection", &Task::enableIntrospection, py::arg("enabled") = true, R"pbdoc(
 			enableIntrospection(enable)
 
