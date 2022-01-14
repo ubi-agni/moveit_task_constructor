@@ -22,6 +22,7 @@ task.add(stages.CurrentState("current state"))
 # Add a planning stage connecting the generator stages
 planner = core.PipelinePlanner()  # create default planning pipeline
 task.add(stages.Connect("connect", [(group, planner)]))  # operate on group
+del planner  # Delete PipelinePlanner when not explicitly needed anymore
 
 # Add a Cartesian pose generator
 generator = stages.GeneratePose("cartesian pose")
