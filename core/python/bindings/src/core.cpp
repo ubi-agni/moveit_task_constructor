@@ -329,10 +329,9 @@ void export_core(pybind11::module& m) {
 	py::classh<Alternatives, ParallelContainerBase>(m, "Alternatives", R"(
 			Plan for different alternatives in parallel
 			Solution of all children are considered simultaneously.
-
-			.. literalinclude:: ./../../../demo/scripts/alternatives.py
-				:language: python
-				:lines: 22-60
+			Take a look at the :ref:`How-To-Guides <subsubsec-howto-alternatives>`
+			for an implementation of a task hierarchy that makes use of the
+			alternatives stage.
 			)")
 	    .def(py::init<const std::string&>(), "name"_a = std::string("Alternatives"));
 
@@ -344,9 +343,9 @@ void export_core(pybind11::module& m) {
 			- Propagator: Forward an incoming ``InterfaceState`` to the next child if the current one ultimately failed on it.
 			- Connect: Only ``Connect`` stages are supported. Pairs of ``InterfaceStates`` are forward to the next child on failure of the current child.
 
-			.. literalinclude:: ./../../../demo/scripts/fallbacks.py
-				:language: python
-				:lines: 21-38
+			Take a look at the :ref:`How-To-Guides <subsubsec-howto-fallbacks>`
+			for an implementation of a task hierarchy that makes use of the
+			fallbacks stage.
 			)")
 	    .def(py::init<const std::string&>(), "name"_a = std::string("Fallbacks"));
 
@@ -354,8 +353,9 @@ void export_core(pybind11::module& m) {
 			Plan for different sub tasks in parallel and eventually merge all sub solutions into a single trajectory
 			This requires all children to operate on disjoint ``JointModelGroups``.
 
-			.. literalinclude:: ./../../../demo/scripts/merger.py
-				:language: python
+			Take a look at the :ref:`How-To-Guides <subsubsec-howto-merger>`
+			for an implementation of a task hierarchy that makes use of the
+			fallbacks stage.
 			)")
 	    .def(py::init<const std::string&>(), "name"_a = std::string("merger"));
 
