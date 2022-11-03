@@ -14,24 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - IMAGE: master-source
-            TARGET_CMAKE_ARGS: >-
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_CXX_FLAGS="-Werror -Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls"
-          - IMAGE: noetic-source
-            NAME: ccov
-            TARGET_CMAKE_ARGS: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage"
           - IMAGE: noetic-source
             CLANG_TIDY: pedantic
             TARGET_CMAKE_ARGS: >-
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_FLAGS="-Werror -Wall -Wextra -Wwrite-strings -Wunreachable-code -Wpointer-arith -Wredundant-decls"
-          - IMAGE: noetic-source
-            NAME: asan
-            DOCKER_RUN_OPTS: >-
-              -e PRELOAD=libasan.so.5
-              -e LSAN_OPTIONS="suppressions=$PWD/.github/workflows/lsan.suppressions"
-            TARGET_CMAKE_ARGS: -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer -O1 -g"
 
     env:
       CATKIN_LINT: true
@@ -42,8 +29,6 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       BASEDIR: ${{ github.workspace }}/.work
       CACHE_PREFIX: "${{ matrix.env.IMAGE }}${{ contains(matrix.env.TARGET_CMAKE_ARGS, '--coverage') && '-ccov' || '' }}"
-      # perform full clang-tidy check only on manual trigger (workflow_dispatch), PRs do check changed files, otherwise nothing
-      CLANG_TIDY_BASE_REF: ${{ github.event_name != 'workflow_dispatch' && (github.base_ref || github.ref) || '' }}
       CC: ${{ matrix.env.CLANG_TIDY && 'clang' }}
       CXX: ${{ matrix.env.CLANG_TIDY && 'clang++' }}
 
