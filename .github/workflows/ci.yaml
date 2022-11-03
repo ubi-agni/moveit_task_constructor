@@ -56,16 +56,7 @@ jobs:
       - name: Adapt ${{ env.BASEDIR }}/clang-tidy-fixes.yml
         if: always() && matrix.env.CLANG_TIDY
         run: |
-          echo "BASEDIR: $BASEDIR"
-          echo "TARGET_REPO_PATH: $TARGET_REPO_PATH"
-          echo "run_target_test: ${{ steps.ici.outputs.run_target_test }}"
-          echo "target_test_results: ${{ steps.ici.outputs.target_test_results }}"
-          echo "clang_tidy_checks: ${{ steps.ici.outputs.clang_tidy_checks }}"
-          echo "$(pwd): "; ls -al
-          echo "${{ env.BASEDIR }}:"; ls -al ${{ env.BASEDIR }}
-          echo "${{ env.BASEDIR }}/target_ws/src:"; ls -al ${{ env.BASEDIR }}/target_ws/src
           cat ${{ env.BASEDIR }}/clang-tidy-fixes.yml
-          sudo sed -i "s#/.work/target_ws/src/moveit_task_constructor/#/#g" ${{ env.BASEDIR }}/clang-tidy-fixes.yml
 
       - name: Show clang-tidy warnings
         if: always() && matrix.env.CLANG_TIDY
