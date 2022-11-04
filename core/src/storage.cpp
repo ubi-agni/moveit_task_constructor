@@ -167,7 +167,7 @@ std::ostream& operator<<(std::ostream& os, const Interface& interface) {
 		os << istate->priority() << "  ";
 	return os;
 }
-const char* InterfaceState::STATUS_COLOR_[] = {
+const char* InterfaceState::STATUS_COLOR[] = {
 	"\033[32m",  // ENABLED - green
 	"\033[33m",  // ARMED - yellow
 	"\033[31m",  // PRUNED - red
@@ -175,8 +175,8 @@ const char* InterfaceState::STATUS_COLOR_[] = {
 };
 std::ostream& operator<<(std::ostream& os, const InterfaceState::Priority& prio) {
 	// maps InterfaceState::Status values to output (color-changing) prefix
-	os << InterfaceState::colorForStatus(prio.status()) << prio.depth() << ":" << prio.cost()
-	   << InterfaceState::colorForStatus(3);
+	os << InterfaceState::STATUS_COLOR[prio.status()] << prio.depth() << ":" << prio.cost()
+	   << InterfaceState::STATUS_COLOR[3];
 	return os;
 }
 std::ostream& operator<<(std::ostream& os, Interface::Direction dir) {

@@ -86,7 +86,7 @@ public:
 		ARMED,  // disabled state in a Connecting interface that will become re-enabled with a new opposite state
 		PRUNED,  // disabled state on a pruned solution branch
 	};
-	static const char* colorForStatus(unsigned int s) { return STATUS_COLOR_[s]; }
+	static const char* STATUS_COLOR[];
 
 	/** InterfaceStates are ordered according to two values:
 	 *  Depth of interlinked trajectory parts and accumulated trajectory costs along that path.
@@ -157,7 +157,6 @@ private:
 	inline void setPriority(const Priority& prio) { priority_ = prio; }
 
 private:
-	static const char* STATUS_COLOR_[];
 	planning_scene::PlanningSceneConstPtr scene_;
 	PropertyMap properties_;
 	/// trajectories which are *timewise before* this state
