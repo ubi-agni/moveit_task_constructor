@@ -56,7 +56,7 @@ jobs:
 
       - name: Process clang-tidy warnings
         if: always() && matrix.env.CLANG_TIDY && github.event_name == 'pull_request'
-        uses: platisd/clang-tidy-pr-comments@master
+        uses: oleg-derevenetz/clang-tidy-pr-comments@multibyte-fix
         with:
           clang_tidy_fixes: ${{ env.BASEDIR }}/clang-tidy-fixes.yaml
           github_token: ${{ secrets.GITHUB_TOKEN }}
