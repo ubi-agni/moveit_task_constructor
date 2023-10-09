@@ -137,6 +137,12 @@ public:
 	          robot_trajectory::RobotTrajectoryPtr& result,
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
 
+	/**
+	 * \brief Get planner name
+	 * \return Name of the last successful planner
+	 */
+	std::string getPlannerId() const override;
+
 protected:
 	/** \brief Actual plan() implementation, targeting the given goal_constraints.
 	 * \param [in] planning_scene Scene for which the planning should be solved
@@ -154,6 +160,8 @@ protected:
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints());
 
 	rclcpp::Node::SharedPtr node_;
+
+	std::string last_successful_planner_;
 
 	/** \brief Map of instantiated (and named) planning pipelines. */
 	std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines_;
