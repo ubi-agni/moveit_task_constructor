@@ -60,7 +60,6 @@ PipelinePlanner::PipelinePlanner(
     const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback,
     const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function)
   : node_(node)
-  , last_successful_planner_("")
   , stopping_criterion_callback_(stopping_criterion_callback)
   , solution_selection_function_(solution_selection_function) {
 	// Declare properties of the MotionPlanRequest
@@ -148,8 +147,6 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from, co
                            const moveit::core::JointModelGroup* joint_model_group, double timeout,
                            robot_trajectory::RobotTrajectoryPtr& result,
                            const moveit_msgs::msg::Constraints& path_constraints) {
-	last_successful_planner_.clear();
-
 	// Construct a Cartesian target pose from the given target transform and offset
 	geometry_msgs::msg::PoseStamped target;
 	target.header.frame_id = from->getPlanningFrame();
@@ -168,6 +165,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
                            robot_trajectory::RobotTrajectoryPtr& result,
                            const moveit_msgs::msg::Constraints& path_constraints) {
 	const auto& map = properties().get<PipelineMap>("pipeline_id_planner_id_map");
+	last_successful_planner_ = "Unknown";
 
 	// Create a request for every planning pipeline that should run in parallel
 	std::vector<moveit_msgs::msg::MotionPlanRequest> requests;
@@ -213,9 +211,6 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 		}
 	}
 	return false;
-}
-std::string PipelinePlanner::getPlannerId() const {
-	return last_successful_planner_.empty() ? std::string("Unknown") : last_successful_planner_;
 }
 }  // namespace solvers
 }  // namespace task_constructor

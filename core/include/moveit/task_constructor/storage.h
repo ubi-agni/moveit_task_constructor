@@ -275,8 +275,8 @@ class SolutionBase
 public:
 	virtual ~SolutionBase() = default;
 
-	[[nodiscard]] inline const InterfaceState* start() const { return start_; }
-	[[nodiscard]] inline const InterfaceState* end() const { return end_; }
+	inline const InterfaceState* start() const { return start_; }
+	inline const InterfaceState* end() const { return end_; }
 
 	/** Set the solution's start_state_
 	 *
@@ -298,21 +298,21 @@ public:
 		const_cast<InterfaceState&>(state).addIncoming(this);
 	}
 
-	[[nodiscard]] inline const Stage* creator() const { return creator_; }
+	inline const Stage* creator() const { return creator_; }
 	void setCreator(Stage* creator);
 
-	[[nodiscard]] inline double cost() const { return cost_; }
+	inline double cost() const { return cost_; }
 	void setCost(double cost);
 	void markAsFailure(const std::string& msg = std::string());
-	[[nodiscard]] inline bool isFailure() const { return !std::isfinite(cost_); }
+	inline bool isFailure() const { return !std::isfinite(cost_); }
 
-	[[nodiscard]] const std::string& plannerId() const { return planner_id_; }
-	void setPlannerId(const std::string& planner_id) { planner_id_ = planner_id; }
-
-	[[nodiscard]] const std::string& comment() const { return comment_; }
+	const std::string& comment() const { return comment_; }
 	void setComment(const std::string& comment) { comment_ = comment; }
 
-	[[nodiscard]] auto& markers() { return markers_; }
+	const std::string& plannerId() const { return planner_id_; }
+	void setPlannerId(const std::string& planner_id) { planner_id_ = planner_id; }
+
+	auto& markers() { return markers_; }
 	const auto& markers() const { return markers_; }
 
 	/// convert solution to message
@@ -329,19 +329,18 @@ public:
 	bool operator<(const SolutionBase& other) const { return this->cost_ < other.cost_; }
 
 protected:
-	SolutionBase(Stage* creator = nullptr, double cost = 0.0, std::string comment = std::string(""),
-	             std::string planner_id = std::string(""))
-	  : creator_(creator), cost_(cost), planner_id_(std::move(planner_id)), comment_(std::move(comment)) {}
+	SolutionBase(Stage* creator = nullptr, double cost = 0.0, std::string comment = "", std::string planner_id = "")
+	  : creator_(creator), cost_(cost), comment_(std::move(comment)), planner_id_(std::move(planner_id)) {}
 
 private:
 	// back-pointer to creating stage, allows to access sub-solutions
 	Stage* creator_;
 	// associated cost
 	double cost_;
-	// name of the planner used to create this solution
-	std::string planner_id_;
 	// comment for this solution, e.g. explanation of failure
 	std::string comment_;
+	// name of the planner used to create this solution
+	std::string planner_id_;
 	// markers for this solution, e.g. target frame or collision indicators
 	std::deque<visualization_msgs::msg::Marker> markers_;
 
@@ -357,7 +356,7 @@ class SubTrajectory : public SolutionBase
 public:
 	SubTrajectory(
 	    const robot_trajectory::RobotTrajectoryConstPtr& trajectory = robot_trajectory::RobotTrajectoryConstPtr(),
-	    double cost = 0.0, std::string comment = std::string(""), std::string planner_id = std::string(""))
+	    double cost = 0.0, std::string comment = "", std::string planner_id = "")
 	  : SolutionBase(nullptr, cost, std::move(comment), std::move(planner_id)), trajectory_(trajectory) {}
 
 	robot_trajectory::RobotTrajectoryConstPtr trajectory() const { return trajectory_; }

@@ -75,8 +75,8 @@ public:
 
 	struct PlannerIdTrajectoryPair
 	{
-		std::string planner_name;
-		robot_trajectory::RobotTrajectoryConstPtr robot_trajectory_ptr;
+		std::string planner_id;
+		robot_trajectory::RobotTrajectoryConstPtr trajectory;
 	};
 
 	using GroupPlannerVector = std::vector<std::pair<std::string, solvers::PlannerInterfacePtr>>;
@@ -91,10 +91,10 @@ public:
 	void compute(const InterfaceState& from, const InterfaceState& to) override;
 
 protected:
-	SolutionSequencePtr makeSequential(const std::vector<PlannerIdTrajectoryPair>& trajectory_planner_vector,
+	SolutionSequencePtr makeSequential(const std::vector<PlannerIdTrajectoryPair>& sub_trajectories,
 	                                   const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
 	                                   const InterfaceState& from, const InterfaceState& to);
-	SubTrajectoryPtr merge(const std::vector<PlannerIdTrajectoryPair>& trajectory_planner_vector,
+	SubTrajectoryPtr merge(const std::vector<PlannerIdTrajectoryPair>& sub_trajectories,
 	                       const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
 	                       const moveit::core::RobotState& state);
 

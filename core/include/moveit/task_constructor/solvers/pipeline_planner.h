@@ -137,11 +137,7 @@ public:
 	          robot_trajectory::RobotTrajectoryPtr& result,
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
 
-	/**
-	 * \brief Get planner name
-	 * \return Name of the last successful planner
-	 */
-	std::string getPlannerId() const override;
+	std::string getPlannerId() const override { return last_successful_planner_; }
 
 protected:
 	/** \brief Actual plan() implementation, targeting the given goal_constraints.

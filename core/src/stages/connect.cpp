@@ -141,7 +141,7 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 	const auto& path_constraints = props.get<moveit_msgs::msg::Constraints>("path_constraints");
 
 	const moveit::core::RobotState& final_goal_state = to.scene()->getCurrentState();
-	std::vector<PlannerIdTrajectoryPair> trajectory_planner_vector;
+	std::vector<PlannerIdTrajectoryPair> sub_trajectories;
 
 	std::vector<planning_scene::PlanningSceneConstPtr> intermediate_scenes;
 	planning_scene::PlanningSceneConstPtr start = from.scene();
@@ -161,7 +161,7 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 
 		robot_trajectory::RobotTrajectoryPtr trajectory;
 		success = pair.second->plan(start, end, jmg, timeout, trajectory, path_constraints);
-		trajectory_planner_vector.push_back(PlannerIdTrajectoryPair({ pair.second->getPlannerId(), trajectory }));
+		sub_trajectories.push_back({ pair.second->getPlannerId(), trajectory });
 
 		if (!success)
 			break;
@@ -172,21 +172,20 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 
 	SolutionBasePtr solution;
 	if (success && mode != SEQUENTIAL)  // try to merge
-		solution = merge(trajectory_planner_vector, intermediate_scenes, from.scene()->getCurrentState());
+		solution = merge(sub_trajectories, intermediate_scenes, from.scene()->getCurrentState());
 	if (!solution)  // success == false or merging failed: store sequentially
-		solution = makeSequential(trajectory_planner_vector, intermediate_scenes, from, to);
+		solution = makeSequential(sub_trajectories, intermediate_scenes, from, to);
 	if (!success)  // error during sequential planning
 		solution->markAsFailure();
-
 	connect(from, to, solution);
 }
 
 SolutionSequencePtr
-Connect::makeSequential(const std::vector<PlannerIdTrajectoryPair>& trajectory_planner_vector,
+Connect::makeSequential(const std::vector<PlannerIdTrajectoryPair>& sub_trajectories,
                         const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
                         const InterfaceState& from, const InterfaceState& to) {
-	assert(!trajectory_planner_vector.empty());
-	assert(trajectory_planner_vector.size() + 1 == intermediate_scenes.size());
+	assert(!sub_trajectories.empty());
+	assert(sub_trajectories.size() + 1 == intermediate_scenes.size());
 
 	/* We need to decouple the sequence of subsolutions, created here, from the external from and to states.
 	   Hence, we create new interface states for all subsolutions. */
@@ -194,19 +193,19 @@ Connect::makeSequential(const std::vector<PlannerIdTrajectoryPair>& trajectory_p
 
 	auto scene_it = intermediate_scenes.begin();
 	SolutionSequence::container_type sub_solutions;
-	for (const auto& pair : trajectory_planner_vector) {
+	for (const auto& sub : sub_trajectories) {
 		// persistently store sub solution
-		auto inserted = subsolutions_.insert(
-		    subsolutions_.end(), SubTrajectory(pair.robot_trajectory_ptr, 0.0, std::string(""), pair.planner_name));
+		auto inserted = subsolutions_.insert(subsolutions_.end(),
+		                                     SubTrajectory(sub.trajectory, 0.0, std::string(""), sub.planner_id));
 		inserted->setCreator(this);
-		if (!pair.robot_trajectory_ptr)  // a null RobotTrajectoryPtr indicates a failure
+		if (!sub.trajectory)  // a null RobotTrajectoryPtr indicates a failure
 			inserted->markAsFailure();
 		// push back solution pointer
 		sub_solutions.push_back(&*inserted);
 
 		// create a new end state, either from intermediate or final planning scene
 		planning_scene::PlanningSceneConstPtr end_ps =
-		    (sub_solutions.size() < trajectory_planner_vector.size()) ? *++scene_it : to.scene();
+		    (sub_solutions.size() < sub_trajectories.size()) ? *++scene_it : to.scene();
 		const InterfaceState* end = &*states_.insert(states_.end(), InterfaceState(end_ps));
 
 		// provide newly created start/end states
@@ -219,50 +218,39 @@ Connect::makeSequential(const std::vector<PlannerIdTrajectoryPair>& trajectory_p
 	return std::make_shared<SolutionSequence>(std::move(sub_solutions));
 }
 
-SubTrajectoryPtr Connect::merge(const std::vector<PlannerIdTrajectoryPair>& trajectory_planner_vector,
+SubTrajectoryPtr Connect::merge(const std::vector<PlannerIdTrajectoryPair>& sub_trajectories,
                                 const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
                                 const moveit::core::RobotState& state) {
 	// no need to merge if there is only a single sub trajectory
-	if (trajectory_planner_vector.size() == 1)
-		return std::make_shared<SubTrajectory>(trajectory_planner_vector.at(0).robot_trajectory_ptr, 0.0, std::string(""),
-		                                       trajectory_planner_vector.at(0).planner_name);
+	if (sub_trajectories.size() == 1)
+		return std::make_shared<SubTrajectory>(sub_trajectories.at(0).trajectory, 0.0, std::string(""),
+		                                       sub_trajectories.at(0).planner_id);
+
+	// split sub_trajectories into trajectories and joined planner_ids
+	std::string planner_ids;
+	std::vector<robot_trajectory::RobotTrajectoryConstPtr> subs;
+	subs.reserve(sub_trajectories.size());
+	for (auto it = sub_trajectories.begin(); it != sub_trajectories.end(); ++it) {
+		subs.push_back(it->trajectory);
+		if (it != sub_trajectories.begin())
+			planner_ids += ", ";
+		planner_ids += it->planner_id;
+	}
 
 	auto jmg = merged_jmg_.get();
 	assert(jmg);
 	auto timing = properties().get<TimeParameterizationPtr>("merge_time_parameterization");
-	robot_trajectory::RobotTrajectoryPtr merged_trajectory = task_constructor::merge(
-	    [&]() {
-		    // Move trajectories into single vector
-		    std::vector<robot_trajectory::RobotTrajectoryConstPtr> robot_traj_vector;
-		    robot_traj_vector.reserve(trajectory_planner_vector.size());
-
-		    // Copy second elements of robot planner vector into separate vector
-		    std::transform(begin(trajectory_planner_vector), end(trajectory_planner_vector),
-		                   std::back_inserter(robot_traj_vector),
-		                   [](auto const& pair) { return pair.robot_trajectory_ptr; });
-		    return robot_traj_vector;
-	    }(),
-	    state, jmg, *timing);
-
-	// check merged trajectory is empty or has collisions
-	if (!merged_trajectory ||
-	    !intermediate_scenes.front()->isPathValid(*merged_trajectory,
-	                                              properties().get<moveit_msgs::msg::Constraints>("path_constraints"))) {
+	robot_trajectory::RobotTrajectoryPtr trajectory = task_constructor::merge(subs, state, jmg, *timing);
+	if (!trajectory)
 		return SubTrajectoryPtr();
-	}
 
-	// Copy first elements of robot planner vector into separate vector
-	std::vector<std::string> planner_names;
-	planner_names.reserve(trajectory_planner_vector.size());
-	std::transform(begin(trajectory_planner_vector), end(trajectory_planner_vector), std::back_inserter(planner_names),
-	               [](auto const& pair) { return pair.planner_name; });
+	// check merged trajectory for collisions
+	if (!intermediate_scenes.front()->isPathValid(*trajectory,
+	                                              properties().get<moveit_msgs::msg::Constraints>("path_constraints")))
+		return SubTrajectoryPtr();
 
-	// Create a sequence of planner names
-	std::string planner_name_sequence;
-	for (auto const& name : planner_names) {
-		planner_name_sequence += std::string(", " + name);
-	}
-	return std::make_shared<SubTrajectory>(merged_trajectory, 0.0, std::string(""), planner_name_sequence);
+	return std::make_shared<SubTrajectory>(trajectory);
+	return std::make_shared<SubTrajectory>(trajectory, 0.0, std::string(""), planner_ids);
 }
 }  // namespace stages
 }  // namespace task_constructor

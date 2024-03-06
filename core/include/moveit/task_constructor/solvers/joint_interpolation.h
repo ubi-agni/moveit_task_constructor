@@ -67,7 +67,7 @@ public:
 	          double timeout, robot_trajectory::RobotTrajectoryPtr& result,
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
 
-	std::string getPlannerId() const override { return std::string("JointInterpolationPlanner"); }
+	std::string getPlannerId() const override { return "JointInterpolationPlanner"; }
 };
 }  // namespace solvers
 }  // namespace task_constructor
