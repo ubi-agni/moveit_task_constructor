@@ -66,19 +66,18 @@ public:
 	 * \param [in] planner_id Planner id to be used for planning. Empty string means default.
 	 */
 	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name = "ompl",
-	                const std::string& planner_id = "");
+	                const std::string& planner_id = "")
+	  : PipelinePlanner(node, { { pipeline_name, planner_id } }) {}
 
 	/** \brief Constructor
 	 * \param [in] node ROS 2 node
 	 * \param [in] pipeline_id_planner_id_map map containing pairs of pipeline and plugin names to be used for planning
-	 * \param [in] planning_pipelines optional: map of named, initialized planning pipelines
 	 * \param [in] stopping_criterion_callback callback to decide when to stop parallel planning
 	 * \param [in] solution_selection_function callback to choose the best solution from multiple ran pipelines
 	 */
 	PipelinePlanner(
 	    const rclcpp::Node::SharedPtr& node,
 	    const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
-	    const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>& planning_pipelines = {},
 	    const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback = nullptr,
 	    const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function =
 	        &moveit::planning_pipeline_interfaces::getShortestSolution);
@@ -155,9 +154,6 @@ protected:
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints());
 
 	rclcpp::Node::SharedPtr node_;
-
-	/** \brief Map of pipeline names (IDs) and their corresponding planner IDs. */
-	std::unordered_map<std::string, std::string> pipeline_id_planner_id_map_;
 
 	/** \brief Map of instantiated (and named) planning pipelines. */
 	std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines_;
