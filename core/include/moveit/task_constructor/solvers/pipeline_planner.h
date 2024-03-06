@@ -68,9 +68,6 @@ public:
 	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name = "ompl",
 	                const std::string& planner_id = "");
 
-	[[deprecated("Deprecated: Use new constructor implementations.")]]  // clang-format off
-	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& /*planning_pipeline*/){};
-
 	/** \brief Constructor
 	 * \param [in] node ROS 2 node
 	 * \param [in] pipeline_id_planner_id_map map containing pairs of pipeline and plugin names to be used for planning
@@ -85,10 +82,6 @@ public:
 	    const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback = nullptr,
 	    const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function =
 	        &moveit::planning_pipeline_interfaces::getShortestSolution);
-
-	[[deprecated("Replaced with setPlannerId(pipeline_name, planner_id)")]]  // clang-format off
-	void setPlannerId(const std::string& /*planner*/) { /* Do nothing */
-	}
 
 	/** \brief Set the planner id for a specific planning pipeline
 	 * \param [in] pipeline_name Name of the to-be-used planning pipeline
