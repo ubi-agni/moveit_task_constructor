@@ -55,11 +55,7 @@ namespace solvers {
 
 PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name,
                                  const std::string& planner_id)
-  : PipelinePlanner(node, [&]() {
-	  std::unordered_map<std::string, std::string> pipeline_id_planner_id_map;
-	  pipeline_id_planner_id_map[pipeline_name] = planner_id;
-	  return pipeline_id_planner_id_map;
-  }()) {}
+  : PipelinePlanner(node, { { pipeline_name, planner_id } }) {}
 
 PipelinePlanner::PipelinePlanner(
     const rclcpp::Node::SharedPtr& node, const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
@@ -121,21 +117,18 @@ void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
 	// The assumption here is that all parameters required by the planning pipeline can be found in a namespace that
 	// equals the pipeline name.
 	if (planning_pipelines_.empty()) {
-		planning_pipelines_ = moveit::planning_pipeline_interfaces::createPlanningPipelineMap(
-		    [&]() {
-			    // Create pipeline name vector from the keys of pipeline_id_planner_id_map_
-			    if (pipeline_id_planner_id_map_.empty()) {
-				    throw std::runtime_error("Cannot initialize PipelinePlanner: No planning pipeline was provided and "
-				                             "pipeline_id_planner_id_map_ is empty!");
-			    }
+		// Create pipeline name vector from the keys of pipeline_id_planner_id_map_
+		if (pipeline_id_planner_id_map_.empty()) {
+			throw std::runtime_error("Cannot initialize PipelinePlanner: No planning pipeline was provided and "
+			                         "pipeline_id_planner_id_map_ is empty!");
+		}
 
-			    std::vector<std::string> pipeline_names;
-			    for (const auto& pipeline_name_planner_id_pair : pipeline_id_planner_id_map_) {
-				    pipeline_names.push_back(pipeline_name_planner_id_pair.first);
-			    }
-			    return pipeline_names;
-		    }(),
-		    robot_model, node_);
+		std::vector<std::string> pipeline_names;
+		for (const auto& pipeline_name_planner_id_pair : pipeline_id_planner_id_map_) {
+			pipeline_names.push_back(pipeline_name_planner_id_pair.first);
+		}
+		planning_pipelines_ = moveit::planning_pipeline_interfaces::createPlanningPipelineMap(std::move(pipeline_names),
+		                                                                                      robot_model, node_);
 	}
 
 	// Check if it is still empty
@@ -192,7 +185,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	    properties().get<std::unordered_map<std::string, std::string>>("pipeline_id_planner_id_map");
 	for (auto const& pipeline_id_planner_id_pair :
 	     (!property_pipeline_id_planner_id_map.empty() ? property_pipeline_id_planner_id_map :
-                                                        pipeline_id_planner_id_map_)) {
+	                                                     pipeline_id_planner_id_map_)) {
 		// Check that requested pipeline exists and skip it if it doesn't exist
 		if (planning_pipelines_.find(pipeline_id_planner_id_pair.first) == planning_pipelines_.end()) {
 			RCLCPP_WARN(
