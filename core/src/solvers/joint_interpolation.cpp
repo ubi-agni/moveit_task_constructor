@@ -77,13 +77,11 @@ MoveItErrorCode JointInterpolationPlanner::plan(const planning_scene::PlanningSc
 
 	// add first point
 	result->addSuffixWayPoint(from->getCurrentState(), 0.0);
-	if (from->isStateColliding(from_state, jmg->getName())) {
+	if (from->isStateColliding(from_state, jmg->getName()))
 		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Start state is in collision!");
-	}
 
-	if (!from_state.satisfiesBounds(jmg)) {
-		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Start state is not within bounds!");
-	}
+	if (!from_state.satisfiesBounds(jmg))
+		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Start state is out of bounds!");
 
 	moveit::core::RobotState waypoint(from_state);
 	double delta = d < 1e-6 ? 1.0 : props.get<double>("max_step") / d;
@@ -91,24 +89,20 @@ MoveItErrorCode JointInterpolationPlanner::plan(const planning_scene::PlanningSc
 		from_state.interpolate(to_state, t, waypoint);
 		result->addSuffixWayPoint(waypoint, t);
 
-		if (from->isStateColliding(waypoint, jmg->getName())) {
-			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "One of the waypoint's state is in collision!");
-		}
+		if (from->isStateColliding(waypoint, jmg->getName()))
+			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Waypoint is in collision!");
 
-		if (!waypoint.satisfiesBounds(jmg)) {
-			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "One of the waypoint's state is not within bounds!");
-		}
+		if (!waypoint.satisfiesBounds(jmg))
+			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Waypoint is out of bounds!");
 	}
 
 	// add goal point
 	result->addSuffixWayPoint(to_state, 1.0);
-	if (from->isStateColliding(to_state, jmg->getName())) {
+	if (from->isStateColliding(to_state, jmg->getName()))
 		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Goal state is in collision!");
-	}
 
-	if (!to_state.satisfiesBounds(jmg)) {
-		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Goal state is not within bounds!");
-	}
+	if (!to_state.satisfiesBounds(jmg))
+		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Goal state is out of bounds!");
 
 	auto timing = props.get<TimeParameterizationPtr>("time_parameterization");
 	timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
@@ -152,15 +146,12 @@ MoveItErrorCode JointInterpolationPlanner::plan(const planning_scene::PlanningSc
 		return to->isStateValid(*robot_state, constraints, jmg->getName());
 	} };
 
-	if (!to->getCurrentStateNonConst().setFromIK(jmg, target * offset.inverse(), link.getName(), timeout, is_valid)) {
-		RCLCPP_WARN(LOGGER, "IK failed for pose target");
+	if (!to->getCurrentStateNonConst().setFromIK(jmg, target * offset.inverse(), link.getName(), timeout, is_valid))
 		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "IK failed for pose target.");
-	}
 	to->getCurrentStateNonConst().update();
 
-	if (std::chrono::steady_clock::now() >= deadline) {
-		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Timed out.");
-	}
+	if (std::chrono::steady_clock::now() >= deadline)
+		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "timeout");
 
 	return plan(from, to, jmg, timeout, result, path_constraints);
 }

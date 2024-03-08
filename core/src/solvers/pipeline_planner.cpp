@@ -208,11 +208,7 @@ MoveItErrorCode PipelinePlanner::plan(const planning_scene::PlanningSceneConstPt
 			// Choose the first solution trajectory as response
 			result = solution.trajectory;
 			last_successful_planner_ = solution.planner_id;
-			if (!bool(result))  // If the plan was not a success
-			{
-				return MoveItErrorCode(solution.error_code.val, solution.error_code.message, solution.error_code.source);
-			}
-			return MoveItErrorCode(MoveItErrorCodes::SUCCESS);
+			return solution.error_code;
 		}
 	}
 	return MoveItErrorCode(MoveItErrorCodes::FAILURE, "No solutions generated from Pipeline Planner");

@@ -69,10 +69,8 @@ MoveItErrorCode CartesianPath::plan(const planning_scene::PlanningSceneConstPtr&
                                     robot_trajectory::RobotTrajectoryPtr& result,
                                     const moveit_msgs::msg::Constraints& path_constraints) {
 	const moveit::core::LinkModel* link = jmg->getOnlyOneEndEffectorTip();
-	if (!link) {
-		RCLCPP_WARN_STREAM(LOGGER, "no unique tip for joint model group: " << jmg->getName());
+	if (!link)
 		return MoveItErrorCode(MoveItErrorCodes::FAILURE, "no unique tip for joint model group: " + jmg->getName());
-	}
 
 	// reach pose of forward kinematics
 	return plan(from, *link, Eigen::Isometry3d::Identity(), to->getCurrentState().getGlobalLinkTransform(link), jmg,
@@ -117,7 +115,7 @@ MoveItErrorCode CartesianPath::plan(const planning_scene::PlanningSceneConstPtr&
 
 	if (achieved_fraction < props.get<double>("min_fraction")) {
 		return MoveItErrorCode(MoveItErrorCodes::FAILURE,
-		                       "Min fraction not met. Achieved fraction : " + std::to_string(achieved_fraction));
+		                       "min_fraction not met. Achieved: " + std::to_string(achieved_fraction));
 	}
 	return MoveItErrorCode(MoveItErrorCodes::SUCCESS);
 }

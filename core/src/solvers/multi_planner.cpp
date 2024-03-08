@@ -57,19 +57,23 @@ MoveItErrorCode MultiPlanner::plan(const planning_scene::PlanningSceneConstPtr& 
 	double remaining_time = std::min(timeout, properties().get<double>("timeout"));
 	auto start_time = std::chrono::steady_clock::now();
 
+	std::string comment = "No planner specified";
 	for (const auto& p : *this) {
 		if (remaining_time < 0)
-			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Timeout");  // timeout
+			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "timeout");
 		if (result)
 			result->clear();
-		if (p->plan(from, to, jmg, remaining_time, result, path_constraints))
-			return MoveItErrorCode(MoveItErrorCodes::SUCCESS);
+		auto r = p->plan(from, to, jmg, remaining_time, result, path_constraints);
+		if (r)
+			return r;
+		else
+			comment = r.message;
 
 		auto now = std::chrono::steady_clock::now();
 		remaining_time -= std::chrono::duration<double>(now - start_time).count();
 		start_time = now;
 	}
-	return MoveItErrorCode(MoveItErrorCodes::FAILURE);
+	return MoveItErrorCode(MoveItErrorCodes::FAILURE, comment);
 }
 
 MoveItErrorCode MultiPlanner::plan(const planning_scene::PlanningSceneConstPtr& from,
@@ -80,19 +84,23 @@ MoveItErrorCode MultiPlanner::plan(const planning_scene::PlanningSceneConstPtr& 
 	double remaining_time = std::min(timeout, properties().get<double>("timeout"));
 	auto start_time = std::chrono::steady_clock::now();
 
+	std::string comment = "No planner specified";
 	for (const auto& p : *this) {
 		if (remaining_time < 0)
-			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "Timeout");  // timeout
+			return MoveItErrorCode(MoveItErrorCodes::FAILURE, "timeout");
 		if (result)
 			result->clear();
-		if (p->plan(from, link, offset, target, jmg, remaining_time, result, path_constraints))
-			return MoveItErrorCode(MoveItErrorCodes::SUCCESS);
+		auto r = p->plan(from, link, offset, target, jmg, remaining_time, result, path_constraints);
+		if (r)
+			return r;
+		else
+			comment = r.message;
 
 		auto now = std::chrono::steady_clock::now();
 		remaining_time -= std::chrono::duration<double>(now - start_time).count();
 		start_time = now;
 	}
-	return MoveItErrorCode(MoveItErrorCodes::FAILURE);
+	return MoveItErrorCode(MoveItErrorCodes::FAILURE, comment);
 }
 }  // namespace solvers
 }  // namespace task_constructor
