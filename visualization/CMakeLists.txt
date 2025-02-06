@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.1.3)
 project(moveit_task_constructor_visualization)
 
 find_package(fmt REQUIRED)
