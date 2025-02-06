@@ -133,7 +133,7 @@ boost::any PropertyConverterRegistry::fromPython(const py::object& po) {
 	if (PyBool_Check(o))
 		return (o == Py_True);
 	if (PyLong_Check(o))
-		return PyLong_AS_LONG(o);
+		return PyLong_AsLong(o);
 	if (PyFloat_Check(o))
 		return PyFloat_AS_DOUBLE(o);
 	if (PyUnicode_Check(o))
