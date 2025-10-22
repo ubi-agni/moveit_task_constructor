@@ -1,7 +1,9 @@
 #include <moveit/task_constructor/container_p.h>
 #include <moveit/task_constructor/stage_p.h>
 #include <moveit/task_constructor/task_p.h>
+#include <moveit/task_constructor/solvers/joint_interpolation.h>
 #include <moveit/task_constructor/stages/fixed_state.h>
+#include <moveit/task_constructor/stages/move_to.h>
 #include <moveit/planning_scene/planning_scene.hpp>
 
 #include "stage_mockups.h"
@@ -716,4 +718,33 @@ TEST_F(TaskTestBase, preempt) {
 	EXPECT_EQ(fwd1->runs_, 1u);
 	EXPECT_EQ(fwd2->runs_, 0u);
 	EXPECT_TRUE(t.plan(1));  // make sure the preempt request has been resetted on the previous call to plan()
+}
+
+TEST(Merger, empty) {
+	Task task;
+	task.setRobotModel(getModel());
+
+	auto scene = std::make_shared<planning_scene::PlanningScene>(task.getRobotModel());
+	auto& state = scene->getCurrentStateNonConst();
+	state.setToDefaultValues();
+
+	auto initial = std::make_unique<stages::FixedState>();
+	initial->setState(scene);
+	task.add(std::move(initial));
+
+	auto planner = std::make_shared<solvers::JointInterpolationPlanner>();
+
+	auto merger = std::make_unique<Merger>("all init moves");
+	auto stage = std::make_unique<stages::MoveTo>("gripper", planner);
+	stage->setGroup("eef_group");
+	stage->setGoal({ { "link2-tip-joint", state.getVariablePosition("link2-tip-joint") } });
+	merger->add(std::move(stage));
+
+	stage = std::make_unique<stages::MoveTo>("arm", planner);
+	stage->setGroup("group");
+	stage->setGoal({ { "base-link1-joint", 1.0 } });
+	merger->add(std::move(stage));
+
+	task.add(std::move(merger));
+	EXPECT_TRUE(task.plan());
 }
