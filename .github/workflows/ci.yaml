@@ -39,6 +39,7 @@ jobs:
       CLANG_TIDY_ARGS: -quiet -export-fixes ${{ github.workspace }}/.work/clang-tidy-fixes.yaml
       DOCKER_IMAGE: moveit/moveit2:${{ matrix.env.IMAGE }}
       UNDERLAY: ${{ endsWith(matrix.env.IMAGE, '-source') && '/root/ws_moveit/install' || ''}}
+      UPSTREAM_WORKSPACE: github:moveit/py_binding_tools#ros2
       TARGET_CMAKE_ARGS: -DCMAKE_BUILD_TYPE=Release
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       BASEDIR: ${{ github.workspace }}/.work
