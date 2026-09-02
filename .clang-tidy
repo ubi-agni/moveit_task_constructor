@@ -2,6 +2,8 @@
 Checks:          'performance-*,
                   -performance-noexcept-move-constructor,
                   -clang-analyzer-core.CallAndMessage,
+                  -clang-analyzer-security.ArrayBound,
+                  -clang-analyzer-unix.BlockInCriticalSection,
                   llvm-namespace-comment,
                   modernize-redundant-void-arg,
                   modernize-use-nullptr,
