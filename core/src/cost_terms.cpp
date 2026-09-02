@@ -253,7 +253,7 @@ Clearance::Clearance(bool with_world, bool cumulative, std::string group_propert
   , distance_to_cost{ [](double d) { return 1.0 / (d + 1e-5); } } {}
 
 double Clearance::operator()(const SubTrajectory& s, std::string& comment) const {
-	constexpr std::string_view PREFIX{ "Clearance: " };
+	constexpr std::string_view prefix{ "Clearance: " };
 
 	collision_detection::DistanceRequest request;
 	request.type =
@@ -299,7 +299,7 @@ double Clearance::operator()(const SubTrajectory& s, std::string& comment) const
 	} };
 
 	auto collision_comment = [=](const auto& distance) {
-		return fmt::format("{}allegedly valid solution collides between '{}' and '{}'", PREFIX, distance.link_names[0],
+		return fmt::format("{}allegedly valid solution collides between '{}' and '{}'", prefix, distance.link_names[0],
 		                   distance.link_names[1]);
 	};
 
@@ -314,10 +314,10 @@ double Clearance::operator()(const SubTrajectory& s, std::string& comment) const
 		}
 		distance = distance_data.distance;
 		if (!cumulative)
-			comment = fmt::format("{}distance {} between '{}' and '{}'", PREFIX, distance, distance_data.link_names[0],
+			comment = fmt::format("{}distance {} between '{}' and '{}'", prefix, distance, distance_data.link_names[0],
 			                      distance_data.link_names[1]);
 		else
-			comment = fmt::format("{}cumulative distance {}", PREFIX, distance);
+			comment = fmt::format("{}cumulative distance {}", prefix, distance);
 	} else {  // check trajectory
 		for (size_t i = 0; i < s.trajectory()->getWayPointCount(); ++i) {
 			auto distance_data = check_distance(state, s.trajectory()->getWayPoint(i));
@@ -328,7 +328,7 @@ double Clearance::operator()(const SubTrajectory& s, std::string& comment) const
 			distance += distance_data.distance;
 		}
 		distance /= s.trajectory()->getWayPointCount();
-		comment = fmt::format("{}average{} distance: {}", PREFIX, (cumulative ? " cumulative" : ""), distance);
+		comment = fmt::format("{}average{} distance: {}", prefix, (cumulative ? " cumulative" : ""), distance);
 	}
 
 	return distance_to_cost(distance);
